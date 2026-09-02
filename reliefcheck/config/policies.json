@@ -1,0 +1,19 @@
+{
+  "policies": [
+    {
+      "item_type": "WATER",
+      "allocation_unit": "person",
+      "limit_value": 2
+    },
+    {
+      "item_type": "RICE",
+      "allocation_unit": "household",
+      "limit_value": 1
+    },
+    {
+      "item_type": "BLANKET",
+      "allocation_unit": "person",
+      "limit_value": 1
+    }
+  ]
+}

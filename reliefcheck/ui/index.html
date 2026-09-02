@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ReliefCheck Kiosk</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Offline-first Distribution Terminal</p>
+          <h1>ReliefCheck</h1>
+        </div>
+        <div class="status-strip" aria-live="polite">
+          <span id="connectionBadge" class="badge badge-ok">로컬 DB 연결</span>
+          <span id="clock" class="clock">--:--</span>
+        </div>
+      </header>
+
+      <section class="layout" aria-label="ReliefCheck 운영 화면">
+        <section class="panel primary-panel">
+          <div class="panel-title">
+            <h2>현재 진행</h2>
+            <button id="resetSession" type="button" class="ghost-button">새 세션</button>
+          </div>
+          <div id="statePill" class="state-pill">WAIT_HOUSEHOLD</div>
+          <p id="message" class="message">가구 카드를 왼쪽 리더에 태그해 주세요.</p>
+
+          <div class="flow-grid">
+            <div class="flow-step" id="householdStep">
+              <span class="step-index">1</span>
+              <div>
+                <strong>가구 인증</strong>
+                <p id="householdText">대기 중</p>
+              </div>
+            </div>
+            <div class="flow-step" id="itemStep">
+              <span class="step-index">2</span>
+              <div>
+                <strong>물품 인증</strong>
+                <p id="itemText">대기 중</p>
+              </div>
+            </div>
+            <div class="flow-step" id="decisionStep">
+              <span class="step-index">3</span>
+              <div>
+                <strong>정책 판정</strong>
+                <p id="decisionText">대기 중</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="result-box" id="resultBox">
+            <span class="label">결과</span>
+            <strong id="resultTitle">대기</strong>
+            <p id="resultDetail">정책 엔진 판정 전입니다.</p>
+          </div>
+        </section>
+
+        <section class="panel scan-panel">
+          <div class="panel-title">
+            <h2>스캔 시뮬레이터</h2>
+            <label class="toggle">
+              <input id="visionToggle" type="checkbox" checked />
+              <span>카메라 일치</span>
+            </label>
+          </div>
+
+          <div class="scan-columns">
+            <div>
+              <h3>왼쪽 NFC · 가구</h3>
+              <div id="householdButtons" class="button-stack"></div>
+              <button class="danger-button" type="button" data-reader="household" data-uid="ITEM-UID-RICE-001">
+                물품 태그를 왼쪽에 태그
+              </button>
+              <button class="ghost-button full" type="button" data-reader="household" data-uid="UNKNOWN-HH">
+                미등록 가구 테스트
+              </button>
+            </div>
+            <div>
+              <h3>오른쪽 NFC · 물품</h3>
+              <div id="itemButtons" class="button-stack"></div>
+              <button class="danger-button" type="button" data-reader="item" data-uid="HH-UID-001">
+                가구 카드를 오른쪽에 태그
+              </button>
+              <button class="ghost-button full" type="button" data-reader="item" data-uid="UNKNOWN-ITEM">
+                미등록 물품 테스트
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel data-panel">
+          <div class="panel-title">
+            <h2>재고·거래</h2>
+            <button id="resetData" type="button" class="ghost-button">샘플 초기화</button>
+          </div>
+          <div id="deviceHealth" class="device-health" aria-live="polite"></div>
+          <div id="inventory" class="inventory-list"></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>시간</th>
+                  <th>가구</th>
+                  <th>물품</th>
+                  <th>결과</th>
+                </tr>
+              </thead>
+              <tbody id="transactions"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

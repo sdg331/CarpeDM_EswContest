@@ -1,0 +1,19 @@
+[Unit]
+Description=ReliefCheck kiosk service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/reliefcheck
+Environment=RELIEFCHECK_HOME=/home/pi/reliefcheck
+EnvironmentFile=-/home/pi/reliefcheck/.env
+ExecStart=/home/pi/reliefcheck/deploy/start-reliefcheck.sh
+Restart=always
+RestartSec=3
+StandardOutput=append:/home/pi/reliefcheck/logs/reliefcheck.log
+StandardError=append:/home/pi/reliefcheck/logs/reliefcheck.err.log
+
+[Install]
+WantedBy=multi-user.target

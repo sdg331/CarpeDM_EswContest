@@ -1,0 +1,79 @@
+# ReliefCheck
+
+재난대피소 및 임시 구호시설에서 수혜 가구와 구호물자를 분리 인식하고, 로컬 정책 엔진과 SQLite 거래 기록으로 중복 지급을 차단하는 Offline-first 임베디드 시스템 MVP입니다.
+
+## 현재 구현 범위
+
+- 듀얼 NFC 역할 분리 시뮬레이션: 가구 리더 / 물품 리더
+- SQLite 로컬 DB: 가구, 물품, 재고, 정책, 거래, 장치 로그
+- 정책 엔진: 지급 한도, 동일 물품 재처리, 재고 부족, 카메라 불일치
+- 거래 무결성: DB COMMIT 후 출력 상태 갱신
+- 프린터 백엔드: 개발용 화면 파일, CUPS, ESC/POS USB 어댑터
+- NFC 백엔드: 개발용 수동 입력, ACR1252U/PCSC 어댑터
+- 카메라 백엔드: 개발용 시뮬레이션, OpenCV QR 교차검증 어댑터
+- 터치 키오스크용 로컬 웹 UI
+
+## 실행 방법
+
+Python 표준 라이브러리만 사용합니다.
+
+```bash
+cd /Users/do_not_delay/Desktop/CarpeDM_EswContest
+python -m reliefcheck.main --reset-seed
+```
+
+브라우저에서 접속:
+
+```text
+http://127.0.0.1:8008
+```
+
+DB만 초기화:
+
+```bash
+python -m reliefcheck.main --init-only --reset-seed
+```
+
+흐름 시뮬레이션:
+
+```bash
+python scripts/simulate_flow.py
+```
+
+테스트:
+
+```bash
+python -m unittest discover -s tests
+```
+
+실험표 생성:
+
+```bash
+python scripts/generate_experiment_report.py
+```
+
+## 주요 파일
+
+| 경로 | 역할 |
+|---|---|
+| `reliefcheck/main.py` | 로컬 HTTP 서버와 API |
+| `reliefcheck/ui/` | 키오스크 화면 |
+| `reliefcheck/storage/database.py` | SQLite 스키마와 샘플 데이터 |
+| `reliefcheck/policy/rule_engine.py` | 지급 정책 판정 |
+| `reliefcheck/services/distribution.py` | 스캔부터 거래 확정, 출력까지 연결 |
+| `reliefcheck/devices/printer.py` | 프린터 어댑터 |
+| `reliefcheck/devices/nfc_acr1252u.py` | ACR1252U/PCSC NFC 어댑터 |
+| `reliefcheck/vision/item_verification.py` | QR 카메라 검증 어댑터 |
+| `reliefcheck/config/` | 시연용 정책과 샘플 데이터 |
+| `docs/` | 아키텍처, 하드웨어 bring-up, 시험 계획 |
+| `docs/04-ui-design-application.md` | Apple 레퍼런스 디자인 적용 기준 |
+| `deploy/reliefcheck.service` | Raspberry Pi systemd 자동 실행 서비스 |
+
+## 다음 개발 단계
+
+1. Raspberry Pi 5에서 현재 MVP 실행
+2. ACR1252U 2대 PC/SC reader name 확정
+3. ZTP-80USL2 프린터 CUPS 또는 ESC/POS 실제 출력 검증
+4. Camera Module 3 QR 검증 촬영 안정화
+5. PIR, 음성 안내, LED 상태 표시 추가
+6. 실측 기반 2D 배치도와 CAD 제작

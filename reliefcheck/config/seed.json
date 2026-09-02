@@ -1,0 +1,93 @@
+{
+  "households": [
+    {
+      "household_id": "HH-001",
+      "card_uid": "HH-UID-001",
+      "head_name": "A-101 가구",
+      "member_count": 3,
+      "status": "ACTIVE"
+    },
+    {
+      "household_id": "HH-002",
+      "card_uid": "HH-UID-002",
+      "head_name": "B-204 가구",
+      "member_count": 1,
+      "status": "ACTIVE"
+    },
+    {
+      "household_id": "HH-003",
+      "card_uid": "HH-UID-003",
+      "head_name": "C-018 가구",
+      "member_count": 4,
+      "status": "BLOCKED"
+    }
+  ],
+  "item_types": [
+    {
+      "item_type": "WATER",
+      "name": "생수",
+      "description": "대피소 기본 음용수"
+    },
+    {
+      "item_type": "RICE",
+      "name": "즉석밥",
+      "description": "가구 단위 식량 키트"
+    },
+    {
+      "item_type": "BLANKET",
+      "name": "담요",
+      "description": "개인 단위 보온 물품"
+    }
+  ],
+  "items": [
+    {
+      "item_id": "ITEM-WATER-001",
+      "tag_uid": "ITEM-UID-WATER-001",
+      "item_type": "WATER",
+      "status": "READY",
+      "visual_code": "WATER"
+    },
+    {
+      "item_id": "ITEM-WATER-002",
+      "tag_uid": "ITEM-UID-WATER-002",
+      "item_type": "WATER",
+      "status": "READY",
+      "visual_code": "WATER"
+    },
+    {
+      "item_id": "ITEM-WATER-003",
+      "tag_uid": "ITEM-UID-WATER-003",
+      "item_type": "WATER",
+      "status": "READY",
+      "visual_code": "WATER"
+    },
+    {
+      "item_id": "ITEM-RICE-001",
+      "tag_uid": "ITEM-UID-RICE-001",
+      "item_type": "RICE",
+      "status": "READY",
+      "visual_code": "RICE"
+    },
+    {
+      "item_id": "ITEM-RICE-002",
+      "tag_uid": "ITEM-UID-RICE-002",
+      "item_type": "RICE",
+      "status": "READY",
+      "visual_code": "RICE"
+    },
+    {
+      "item_id": "ITEM-BLANKET-001",
+      "tag_uid": "ITEM-UID-BLANKET-001",
+      "item_type": "BLANKET",
+      "status": "READY",
+      "visual_code": "BLANKET"
+    },
+    {
+      "item_id": "ITEM-BLANKET-002",
+      "tag_uid": "ITEM-UID-BLANKET-002",
+      "item_type": "BLANKET",
+      "status": "READY",
+      "visual_code": "BLANKET"
+    }
+  ]
+}

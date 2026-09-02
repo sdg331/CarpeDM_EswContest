@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+.env
+.coverage
+.pytest_cache/
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/receipts/
+.venv/
