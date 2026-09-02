@@ -12,8 +12,9 @@
 - NFC 백엔드: 개발용 수동 입력, ACR1252U/PCSC 어댑터
 - 카메라 백엔드: 개발용 시뮬레이션, OpenCV QR 교차검증 어댑터
 - 터치 키오스크용 로컬 웹 UI
-- 대상 시연용 운영 콘솔: 현장 지급, 운영 대시보드, 정책 판정, 장치 진단, 실험 결과 탭
+- 대상 시연용 운영 콘솔: 현장 지급, 운영 대시보드, 정책 판정, 장치 진단, SW 검증, 실험 결과 탭
 - 판정 근거 노출: 가구 상태, 물품 상태, 재고, 정책 한도, 중복 이력, 카메라 검증 체크리스트
+- SW Evidence Mode: 실장비 미연동 상황에서도 핵심 정책, 예외, 장애 격리를 자동 시나리오로 검증
 
 ## 실행 방법
 
@@ -54,6 +55,12 @@ python -m unittest discover -s tests
 python scripts/generate_experiment_report.py
 ```
 
+소프트웨어 검증 증거 생성:
+
+```bash
+python scripts/run_sw_evidence_suite.py
+```
+
 ## 주요 파일
 
 | 경로 | 역할 |
@@ -64,6 +71,7 @@ python scripts/generate_experiment_report.py
 | `reliefcheck/policy/rule_engine.py` | 지급 정책 판정 |
 | `reliefcheck/services/distribution.py` | 스캔부터 거래 확정, 출력까지 연결 |
 | `reliefcheck/services/ops.py` | 운영 지표, 정책 매트릭스, 장치 진단, 실험 지표 API 데이터 |
+| `reliefcheck/services/evidence.py` | SW Evidence Mode, 자동 검증 시나리오, 준비도 계산 |
 | `reliefcheck/devices/printer.py` | 프린터 어댑터 |
 | `reliefcheck/devices/nfc_acr1252u.py` | ACR1252U/PCSC NFC 어댑터 |
 | `reliefcheck/vision/item_verification.py` | QR 카메라 검증 어댑터 |
@@ -71,6 +79,7 @@ python scripts/generate_experiment_report.py
 | `docs/` | 아키텍처, 하드웨어 bring-up, 시험 계획 |
 | `docs/04-ui-design-application.md` | Apple 레퍼런스 디자인 적용 기준 |
 | `docs/07-competition-readiness.md` | 대상급 시연 완성도 점검표 |
+| `reports/sw-evidence-summary.md` | 실장비 미연동 시 소프트웨어 검증 증거 |
 | `deploy/reliefcheck.service` | Raspberry Pi systemd 자동 실행 서비스 |
 
 ## 다음 개발 단계

@@ -28,6 +28,12 @@ const elements = {
   policyMatrix: $("#policyMatrix"),
   deviceMatrix: $("#deviceMatrix"),
   deviceHealth: $("#deviceHealth"),
+  softwareMode: $("#softwareMode"),
+  softwareScore: $("#softwareScore"),
+  softwarePillars: $("#softwarePillars"),
+  softwareScenarios: $("#softwareScenarios"),
+  softwareBoundary: $("#softwareBoundary"),
+  softwareLatest: $("#softwareLatest"),
   experimentTargets: $("#experimentTargets"),
 };
 
@@ -94,6 +100,9 @@ function evidenceStatusLabel(status) {
   if (status === "ready") return "검증 준비";
   if (status === "watch") return "점검 필요";
   if (status === "needs_measurement") return "실측 필요";
+  if (status === "pass") return "통과";
+  if (status === "needs_evidence") return "증거 필요";
+  if (status === "needs_run") return "실행 필요";
   return status || "대기";
 }
 
@@ -289,6 +298,7 @@ function renderOps(ops) {
   renderRiskEvents(ops.risk_events || []);
   renderPolicyMatrix(ops.policy_matrix || []);
   renderDeviceMatrix(ops.device_matrix || []);
+  renderSoftwareEvidence(ops.software_evidence || {});
   renderExperimentTargets(ops.experiment_targets || []);
 }
 
@@ -521,6 +531,129 @@ function renderExperimentTargets(rows) {
       `,
     )
     .join("");
+}
+
+function renderSoftwareEvidence(evidence) {
+  renderSoftwareMode(evidence.mode || {});
+  renderSoftwareScore(evidence.readiness || {});
+  renderSoftwarePillars(evidence.pillars || []);
+  renderSoftwareScenarios(evidence.scenario_coverage || []);
+  renderSoftwareBoundary(evidence.hardware_boundary || []);
+  renderLatestSuite(evidence.latest_suite || {});
+}
+
+function renderSoftwareMode(mode) {
+  elements.softwareMode.innerHTML = `
+    <div class="mode-card">
+      <span>${escapeHtml(mode.name || "SW Evidence Mode")}</span>
+      <strong>${mode.hardware_available ? "실장비 포함" : "소프트웨어 검증 모드"}</strong>
+      <p>${escapeHtml(mode.position || "정책과 거래 흐름을 소프트웨어로 검증합니다.")}</p>
+    </div>
+    <p class="boundary-note">${escapeHtml(mode.boundary || "물리 장치 성능은 별도 실측 대상입니다.")}</p>
+  `;
+}
+
+function renderSoftwareScore(readiness) {
+  const score = Number(readiness.score || 0);
+  elements.softwareScore.innerHTML = `
+    <div class="score-ring" style="--score: ${Math.max(0, Math.min(100, score))}%">
+      <strong>${score}%</strong>
+      <span>${escapeHtml(readiness.label || "검증 실행 필요")}</span>
+    </div>
+    <dl class="score-meta">
+      <div><dt>획득</dt><dd>${fmtNumber(readiness.earned)}점</dd></div>
+      <div><dt>총점</dt><dd>${fmtNumber(readiness.total)}점</dd></div>
+    </dl>
+  `;
+}
+
+function renderSoftwarePillars(rows) {
+  if (!rows.length) {
+    elements.softwarePillars.innerHTML = `<p class="empty">품질 축 데이터 없음</p>`;
+    return;
+  }
+  elements.softwarePillars.innerHTML = rows
+    .map(
+      (row) => `
+        <article class="pillar-item ${escapeHtml(row.status)}">
+          <div>
+            <span>${escapeHtml(evidenceStatusLabel(row.status))}</span>
+            <strong>${escapeHtml(row.name)}</strong>
+            <p>${escapeHtml(row.evidence)}</p>
+          </div>
+          <dl>
+            <div><dt>점수</dt><dd>${fmtNumber(row.earned)} / ${fmtNumber(row.weight)}</dd></div>
+            <div><dt>상태</dt><dd>${escapeHtml(row.detail)}</dd></div>
+          </dl>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function renderSoftwareScenarios(rows) {
+  if (!rows.length) {
+    elements.softwareScenarios.innerHTML = `<p class="empty">시나리오 데이터 없음</p>`;
+    return;
+  }
+  elements.softwareScenarios.innerHTML = rows
+    .map(
+      (row) => `
+        <article class="scenario-card ${escapeHtml(row.status)}">
+          <span>${escapeHtml(row.case_id)}</span>
+          <strong>${escapeHtml(row.name)}</strong>
+          <p>${escapeHtml(row.purpose)}</p>
+          <dl>
+            <div><dt>기대</dt><dd>${escapeHtml(row.expected_result)} / ${escapeHtml(row.expected_code)}</dd></div>
+            <div><dt>실제</dt><dd>${escapeHtml(formatActualScenario(row.actual))}</dd></div>
+          </dl>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function formatActualScenario(actual) {
+  if (!actual || !Object.keys(actual).length) return "suite 실행 필요";
+  return `${actual.result || "-"} / ${actual.reason_code || "-"} / ${actual.print_status || "NOT_REQUIRED"}`;
+}
+
+function renderSoftwareBoundary(rows) {
+  if (!rows.length) {
+    elements.softwareBoundary.innerHTML = `<p class="empty">경계 데이터 없음</p>`;
+    return;
+  }
+  elements.softwareBoundary.innerHTML = rows
+    .map(
+      (row) => `
+        <div class="boundary-item ${row.ok ? "ok" : "bad"}">
+          <strong>${escapeHtml(row.name)}</strong>
+          <span>${escapeHtml(row.mode)}</span>
+          <p>${escapeHtml(row.software_verified)}</p>
+          <small>${escapeHtml(row.physical_boundary)}</small>
+        </div>
+      `,
+    )
+    .join("");
+}
+
+function renderLatestSuite(latest) {
+  if (!latest.available) {
+    elements.softwareLatest.innerHTML = `<p class="empty">${escapeHtml(latest.message || "suite 실행 결과 없음")}</p>`;
+    return;
+  }
+  const summary = latest.summary || {};
+  elements.softwareLatest.innerHTML = `
+    <div class="latest-summary">
+      <strong>${fmtNumber(summary.passed_cases)} / ${fmtNumber(summary.total_cases)}</strong>
+      <span>자동 시나리오 통과</span>
+    </div>
+    <dl class="score-meta">
+      <div><dt>거래</dt><dd>${fmtNumber(summary.transactions)}건</dd></div>
+      <div><dt>거절</dt><dd>${fmtNumber(summary.rejected)}건</dd></div>
+      <div><dt>출력 실패 격리</dt><dd>${fmtNumber(summary.print_failed)}건</dd></div>
+    </dl>
+  `;
 }
 
 async function scan(reader, uid) {

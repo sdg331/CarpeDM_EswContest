@@ -167,7 +167,12 @@ h3 {
 .dashboard-metric,
 .policy-card,
 .device-card,
-.experiment-item {
+.experiment-item,
+.mode-card,
+.pillar-item,
+.scenario-card,
+.boundary-item,
+.latest-summary {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
@@ -183,6 +188,9 @@ h3 {
 .policy-card span,
 .device-card span,
 .experiment-item span,
+.mode-card span,
+.pillar-item span,
+.scenario-card span,
 .event-item span,
 .inventory-item span,
 .pressure-item span {
@@ -239,6 +247,7 @@ h3 {
 .ops-grid,
 .policy-grid,
 .device-layout,
+.software-grid,
 .experiment-grid {
   display: grid;
   gap: 14px;
@@ -251,6 +260,7 @@ h3 {
 .ops-grid,
 .policy-grid,
 .device-layout,
+.software-grid,
 .experiment-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -385,6 +395,9 @@ h3 {
 .check-list,
 .policy-matrix,
 .device-matrix,
+.pillar-list,
+.scenario-grid,
+.boundary-list,
 .experiment-list {
   display: grid;
   gap: 9px;
@@ -488,7 +501,10 @@ h3 {
 .context-grid,
 .policy-card dl,
 .device-card dl,
-.experiment-item dl {
+.experiment-item dl,
+.score-meta,
+.pillar-item dl,
+.scenario-card dl {
   display: grid;
   gap: 8px;
 }
@@ -501,7 +517,10 @@ h3 {
 .context-grid div,
 .policy-card dl div,
 .device-card dl div,
-.experiment-item dl div {
+.experiment-item dl div,
+.score-meta div,
+.pillar-item dl div,
+.scenario-card dl div {
   display: grid;
   grid-template-columns: 86px minmax(0, 1fr);
   gap: 8px;
@@ -746,13 +765,16 @@ th {
 
 .policy-matrix,
 .device-matrix,
+.pillar-list,
+.scenario-grid,
 .experiment-list {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .policy-card,
 .device-card,
-.experiment-item {
+.experiment-item,
+.pillar-item {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(180px, 0.9fr);
   gap: 14px;
@@ -762,7 +784,12 @@ th {
 
 .policy-card strong,
 .device-card strong,
-.experiment-item strong {
+.experiment-item strong,
+.pillar-item strong,
+.scenario-card strong,
+.mode-card strong,
+.boundary-item strong,
+.latest-summary strong {
   display: block;
   margin-top: 4px;
   font-size: 1.02rem;
@@ -770,7 +797,11 @@ th {
 
 .policy-card p,
 .device-card p,
-.experiment-item p {
+.experiment-item p,
+.pillar-item p,
+.scenario-card p,
+.mode-card p,
+.boundary-item p {
   margin-top: 6px;
   color: var(--muted);
   line-height: 1.45;
@@ -865,6 +896,137 @@ th {
   gap: 10px;
 }
 
+.software-mode {
+  display: grid;
+  gap: 10px;
+}
+
+.mode-card,
+.latest-summary {
+  padding: 14px;
+  background: #fbfcfd;
+}
+
+.mode-card strong {
+  margin-top: 8px;
+  font-size: 1.28rem;
+}
+
+.boundary-note {
+  padding: 12px;
+  border: 1px solid #eed08d;
+  border-radius: 8px;
+  background: var(--amber-soft);
+  color: #5f4300;
+  font-weight: 720;
+  line-height: 1.45;
+}
+
+.software-score {
+  display: grid;
+  gap: 12px;
+}
+
+.score-ring {
+  --score: 0%;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(188px, 100%);
+  aspect-ratio: 1;
+  margin: 0 auto;
+  padding: 34px;
+  border-radius: 50%;
+  background: conic-gradient(var(--green) var(--score), #e1e6eb 0);
+  border: 1px solid var(--line);
+  text-align: center;
+}
+
+.score-ring::before {
+  position: absolute;
+  inset: 22px;
+  border-radius: 50%;
+  background: #fff;
+  content: "";
+}
+
+.score-ring strong {
+  position: relative;
+  display: block;
+  font-size: 2.2rem;
+  font-weight: 860;
+  z-index: 1;
+}
+
+.score-ring span {
+  position: relative;
+  display: block;
+  max-width: 150px;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 780;
+  line-height: 1.35;
+  z-index: 1;
+}
+
+.pillar-item.pass,
+.scenario-card.pass,
+.boundary-item.ok {
+  border-color: #9bd4b7;
+  background: var(--green-soft);
+}
+
+.pillar-item.needs_evidence,
+.scenario-card.needs_run,
+.boundary-item.bad {
+  border-color: #eed08d;
+  background: var(--amber-soft);
+}
+
+.scenario-card,
+.boundary-item {
+  padding: 13px;
+  background: #fbfcfd;
+}
+
+.scenario-card dl {
+  margin-top: 10px;
+}
+
+.scenario-card dl div {
+  grid-template-columns: 48px minmax(0, 1fr);
+}
+
+.boundary-item {
+  display: grid;
+  gap: 4px;
+}
+
+.boundary-item span {
+  color: var(--blue);
+}
+
+.boundary-item small {
+  color: var(--muted);
+  font-weight: 680;
+  line-height: 1.4;
+}
+
+.latest-summary {
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.latest-summary strong {
+  font-size: 1.8rem;
+}
+
+.latest-summary span {
+  color: var(--muted);
+  font-weight: 740;
+}
+
 .experiment-item.ready {
   border-color: #9bd4b7;
 }
@@ -900,6 +1062,7 @@ th {
   .ops-grid,
   .policy-grid,
   .device-layout,
+  .software-grid,
   .experiment-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -921,10 +1084,13 @@ th {
   .ops-grid,
   .policy-grid,
   .device-layout,
+  .software-grid,
   .experiment-grid,
   .scan-columns,
   .policy-matrix,
   .device-matrix,
+  .pillar-list,
+  .scenario-grid,
   .experiment-list,
   .dashboard-metrics,
   .metric-strip,
@@ -970,6 +1136,7 @@ th {
   .policy-card,
   .device-card,
   .experiment-item,
+  .pillar-item,
   .pressure-item {
     grid-template-columns: 1fr;
   }
@@ -994,7 +1161,10 @@ th {
   .result-meta div,
   .policy-card dl div,
   .device-card dl div,
-  .experiment-item dl div {
+  .experiment-item dl div,
+  .score-meta div,
+  .pillar-item dl div,
+  .scenario-card dl div {
     grid-template-columns: 1fr;
   }
 }

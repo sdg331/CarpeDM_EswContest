@@ -34,6 +34,7 @@
         <button class="tab-button" type="button" data-tab-target="dashboard" aria-selected="false">운영 대시보드</button>
         <button class="tab-button" type="button" data-tab-target="policy" aria-selected="false">정책 판정</button>
         <button class="tab-button" type="button" data-tab-target="devices" aria-selected="false">장치 진단</button>
+        <button class="tab-button" type="button" data-tab-target="software" aria-selected="false">SW 검증</button>
         <button class="tab-button" type="button" data-tab-target="experiments" aria-selected="false">실험 결과</button>
       </nav>
 
@@ -276,6 +277,70 @@
               </div>
               <div class="hardware-node storage-node">SQLite WAL · Offline-first</div>
             </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="tab-software" class="tab-panel" aria-label="소프트웨어 검증">
+        <div class="software-grid">
+          <section class="panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">SW Evidence Mode</p>
+                <h2>검증 경계</h2>
+              </div>
+            </div>
+            <div id="softwareMode" class="software-mode"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">Readiness</p>
+                <h2>소프트웨어 준비도</h2>
+              </div>
+            </div>
+            <div id="softwareScore" class="software-score"></div>
+          </section>
+
+          <section class="panel wide-panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">Quality Pillars</p>
+                <h2>품질 축</h2>
+              </div>
+            </div>
+            <div id="softwarePillars" class="pillar-list"></div>
+          </section>
+
+          <section class="panel wide-panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">Automated Scenarios</p>
+                <h2>자동 검증 시나리오</h2>
+              </div>
+            </div>
+            <div id="softwareScenarios" class="scenario-grid"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">Boundary</p>
+                <h2>실장비 미연동 표시</h2>
+              </div>
+            </div>
+            <div id="softwareBoundary" class="boundary-list"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">Latest Suite</p>
+                <h2>최근 실행 결과</h2>
+              </div>
+            </div>
+            <div id="softwareLatest" class="latest-suite"></div>
           </section>
         </div>
       </section>

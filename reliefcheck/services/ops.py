@@ -4,6 +4,8 @@ import sqlite3
 from datetime import datetime
 from typing import Any
 
+from reliefcheck.services.evidence import build_software_evidence
+
 
 def operational_snapshot(conn: sqlite3.Connection, health: dict[str, Any]) -> dict[str, Any]:
     today = datetime.now().date().isoformat()
@@ -22,6 +24,7 @@ def operational_snapshot(conn: sqlite3.Connection, health: dict[str, Any]) -> di
         "risk_events": fetch_risk_events(conn),
         "device_matrix": build_device_matrix(health),
         "experiment_targets": build_experiment_targets(totals, health),
+        "software_evidence": build_software_evidence(conn, health),
     }
 
 

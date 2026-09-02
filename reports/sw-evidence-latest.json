@@ -1,0 +1,202 @@
+{
+  "generated_at": "2026-09-02T22:36:18+09:00",
+  "mode": "SW Evidence Mode",
+  "hardware_boundary": "manual/screen/simulated 어댑터 기준이며 물리 장치 신뢰성 수치는 주장하지 않음",
+  "summary": {
+    "total_cases": 10,
+    "passed_cases": 10,
+    "failed_cases": 0,
+    "transactions": 7,
+    "approved": 4,
+    "rejected": 3,
+    "print_failed": 1,
+    "reason_counts": {
+      "D001": 1,
+      "D002": 1,
+      "OK": 4,
+      "V001": 1
+    }
+  },
+  "cases": [
+    {
+      "case_id": "APPROVE",
+      "name": "정상 지급 승인",
+      "passed": true,
+      "expected": {
+        "result": "APPROVED",
+        "reason_code": "OK",
+        "transaction_delta": 1,
+        "print_status": "PRINTED"
+      },
+      "actual": {
+        "result": "APPROVED",
+        "reason_code": "OK",
+        "print_status": "PRINTED",
+        "transaction_delta": 1,
+        "checks": 7
+      }
+    },
+    {
+      "case_id": "DUPLICATE_ITEM",
+      "name": "동일 물품 재태그 차단",
+      "passed": true,
+      "expected": {
+        "result": "REJECTED",
+        "reason_code": "D002",
+        "transaction_delta": 1,
+        "print_status": null
+      },
+      "actual": {
+        "result": "REJECTED",
+        "reason_code": "D002",
+        "print_status": "NOT_REQUIRED",
+        "transaction_delta": 1,
+        "checks": 3
+      }
+    },
+    {
+      "case_id": "WATER_LIMIT_APPROVE_1",
+      "name": "개인 단위 생수 1차 승인",
+      "passed": true,
+      "expected": {
+        "result": "APPROVED",
+        "reason_code": "OK",
+        "transaction_delta": 1,
+        "print_status": "PRINTED"
+      },
+      "actual": {
+        "result": "APPROVED",
+        "reason_code": "OK",
+        "print_status": "PRINTED",
+        "transaction_delta": 1,
+        "checks": 7
+      }
+    },
+    {
+      "case_id": "WATER_LIMIT_APPROVE_2",
+      "name": "개인 단위 생수 2차 승인",
+      "passed": true,
+      "expected": {
+        "result": "APPROVED",
+        "reason_code": "OK",
+        "transaction_delta": 1,
+        "print_status": "PRINTED"
+      },
+      "actual": {
+        "result": "APPROVED",
+        "reason_code": "OK",
+        "print_status": "PRINTED",
+        "transaction_delta": 1,
+        "checks": 7
+      }
+    },
+    {
+      "case_id": "HOUSEHOLD_LIMIT",
+      "name": "가구별 한도 초과 차단",
+      "passed": true,
+      "expected": {
+        "result": "REJECTED",
+        "reason_code": "D001",
+        "transaction_delta": 1,
+        "print_status": null
+      },
+      "actual": {
+        "result": "REJECTED",
+        "reason_code": "D001",
+        "print_status": "NOT_REQUIRED",
+        "transaction_delta": 1,
+        "checks": 6
+      }
+    },
+    {
+      "case_id": "VISION_MISMATCH",
+      "name": "카메라 불일치 차단",
+      "passed": true,
+      "expected": {
+        "result": "REJECTED",
+        "reason_code": "V001",
+        "transaction_delta": 1,
+        "print_status": null
+      },
+      "actual": {
+        "result": "REJECTED",
+        "reason_code": "V001",
+        "print_status": "NOT_REQUIRED",
+        "transaction_delta": 1,
+        "checks": 7
+      }
+    },
+    {
+      "case_id": "WRONG_READER",
+      "name": "잘못된 리더 입력 차단",
+      "passed": true,
+      "expected": {
+        "result": "REJECTED",
+        "reason_code": "R001",
+        "transaction_delta": 0,
+        "print_status": null
+      },
+      "actual": {
+        "result": "REJECTED",
+        "reason_code": "R001",
+        "print_status": "NOT_REQUIRED",
+        "transaction_delta": 0,
+        "checks": 0
+      }
+    },
+    {
+      "case_id": "UNKNOWN_HOUSEHOLD",
+      "name": "미등록 가구 차단",
+      "passed": true,
+      "expected": {
+        "result": "REJECTED",
+        "reason_code": "H001",
+        "transaction_delta": 0,
+        "print_status": null
+      },
+      "actual": {
+        "result": "REJECTED",
+        "reason_code": "H001",
+        "print_status": "NOT_REQUIRED",
+        "transaction_delta": 0,
+        "checks": 0
+      }
+    },
+    {
+      "case_id": "UNKNOWN_ITEM",
+      "name": "미등록 물품 차단",
+      "passed": true,
+      "expected": {
+        "result": "REJECTED",
+        "reason_code": "I001",
+        "transaction_delta": 0,
+        "print_status": null
+      },
+      "actual": {
+        "result": "REJECTED",
+        "reason_code": "I001",
+        "print_status": "NOT_REQUIRED",
+        "transaction_delta": 0,
+        "checks": 0
+      }
+    },
+    {
+      "case_id": "PRINT_FAILURE",
+      "name": "프린터 실패 격리",
+      "passed": true,
+      "expected": {
+        "result": "APPROVED",
+        "reason_code": "OK",
+        "transaction_delta": 1,
+        "print_status": "FAILED"
+      },
+      "actual": {
+        "result": "APPROVED",
+        "reason_code": "OK",
+        "print_status": "FAILED",
+        "transaction_delta": 1,
+        "checks": 7
+      }
+    }
+  ]
+}
