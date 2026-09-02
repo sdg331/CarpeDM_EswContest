@@ -168,6 +168,8 @@ class DistributionService:
             "reason_code": decision.reason_code,
             "reason_message": decision.reason_message,
             "print_status": self._fetch_print_status(tx_id),
+            "checks": list(decision.checks),
+            "context": decision.context,
         }
         if receipt_path:
             decision_payload["receipt_path"] = receipt_path
@@ -227,6 +229,8 @@ class DistributionService:
                 "reason_message": transaction["reason_message"],
                 "print_status": status,
                 "receipt_path": receipt_path,
+                "checks": [],
+                "context": {},
             },
             "지급확인증을 다시 출력했습니다." if status == "PRINTED" else REASON_MESSAGES["P001"],
             receipt_path,

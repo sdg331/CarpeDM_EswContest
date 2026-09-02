@@ -18,6 +18,7 @@ from reliefcheck.policy.rule_engine import PolicyEngine
 from reliefcheck.services.distribution import DistributionService
 from reliefcheck.services.distribution import public_transactions
 from reliefcheck.services.health import database_health
+from reliefcheck.services.ops import operational_snapshot
 from reliefcheck.storage.database import (
     PROJECT_ROOT,
     connect,
@@ -102,6 +103,11 @@ def make_handler(runtime: ReliefCheckRuntime) -> type[BaseHTTPRequestHandler]:
             if path == "/api/state":
                 with runtime.lock:
                     self._send_json(runtime.service.public_dashboard())
+                return
+            if path == "/api/ops":
+                with runtime.lock:
+                    health = runtime.health()
+                    self._send_json(operational_snapshot(runtime.conn, health))
                 return
             if path == "/api/sample-tags":
                 with runtime.lock:

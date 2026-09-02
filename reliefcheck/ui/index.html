@@ -3,116 +3,311 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ReliefCheck Kiosk</title>
+    <title>ReliefCheck Operations Console</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%231769e0'/%3E%3Cpath d='M18 33h28M32 19v28' stroke='white' stroke-width='7' stroke-linecap='round'/%3E%3C/svg%3E"
+    />
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
     <main class="shell">
       <header class="topbar">
-        <div>
-          <p class="eyebrow">Offline-first Distribution Terminal</p>
+        <div class="brand">
+          <p class="eyebrow">Offline-first Embedded Relief System</p>
           <h1>ReliefCheck</h1>
+          <p class="brand-copy">대피소 구호물자 지급, 중복 차단, 장치 상태를 한 번에 통제하는 현장 콘솔</p>
         </div>
         <div class="status-strip" aria-live="polite">
           <span id="connectionBadge" class="badge badge-ok">로컬 DB 연결</span>
+          <span id="operationState" class="badge">운영 가능</span>
           <span id="clock" class="clock">--:--</span>
         </div>
       </header>
 
-      <section class="layout" aria-label="ReliefCheck 운영 화면">
-        <section class="panel primary-panel">
-          <div class="panel-title">
-            <h2>현재 진행</h2>
-            <button id="resetSession" type="button" class="ghost-button">새 세션</button>
-          </div>
-          <div id="statePill" class="state-pill">WAIT_HOUSEHOLD</div>
-          <p id="message" class="message">가구 카드를 왼쪽 리더에 태그해 주세요.</p>
+      <section id="metricCards" class="metric-strip" aria-label="운영 핵심 지표"></section>
 
-          <div class="flow-grid">
-            <div class="flow-step" id="householdStep">
-              <span class="step-index">1</span>
+      <nav class="tabs" aria-label="ReliefCheck 화면 전환">
+        <button class="tab-button is-active" type="button" data-tab-target="field" aria-selected="true">
+          현장 지급
+        </button>
+        <button class="tab-button" type="button" data-tab-target="dashboard" aria-selected="false">운영 대시보드</button>
+        <button class="tab-button" type="button" data-tab-target="policy" aria-selected="false">정책 판정</button>
+        <button class="tab-button" type="button" data-tab-target="devices" aria-selected="false">장치 진단</button>
+        <button class="tab-button" type="button" data-tab-target="experiments" aria-selected="false">실험 결과</button>
+      </nav>
+
+      <section id="tab-field" class="tab-panel is-active" aria-label="현장 지급">
+        <div class="field-grid">
+          <section class="panel primary-panel">
+            <div class="panel-title">
               <div>
-                <strong>가구 인증</strong>
-                <p id="householdText">대기 중</p>
+                <p class="section-kicker">Live Session</p>
+                <h2>지급 진행</h2>
+              </div>
+              <button id="resetSession" type="button" class="ghost-button">새 세션</button>
+            </div>
+            <div id="statePill" class="state-pill">WAIT_HOUSEHOLD</div>
+            <p id="message" class="message">가구 카드를 왼쪽 리더에 태그해 주세요.</p>
+
+            <div class="flow-grid">
+              <div class="flow-step" id="householdStep">
+                <span class="step-index">1</span>
+                <div>
+                  <strong>가구 인증</strong>
+                  <p id="householdText">대기 중</p>
+                </div>
+              </div>
+              <div class="flow-step" id="itemStep">
+                <span class="step-index">2</span>
+                <div>
+                  <strong>물품 인증</strong>
+                  <p id="itemText">대기 중</p>
+                </div>
+              </div>
+              <div class="flow-step" id="decisionStep">
+                <span class="step-index">3</span>
+                <div>
+                  <strong>정책 판정</strong>
+                  <p id="decisionText">대기 중</p>
+                </div>
               </div>
             </div>
-            <div class="flow-step" id="itemStep">
-              <span class="step-index">2</span>
+          </section>
+
+          <section class="panel scan-panel">
+            <div class="panel-title">
               <div>
-                <strong>물품 인증</strong>
-                <p id="itemText">대기 중</p>
+                <p class="section-kicker">Dual Reader</p>
+                <h2>태그 입력 콘솔</h2>
+              </div>
+              <label class="toggle">
+                <input id="visionToggle" type="checkbox" checked />
+                <span>카메라 일치</span>
+              </label>
+            </div>
+
+            <div class="scan-columns">
+              <div>
+                <h3>왼쪽 NFC · 가구 카드</h3>
+                <div id="householdButtons" class="button-stack"></div>
+                <button class="danger-button" type="button" data-reader="household" data-uid="ITEM-UID-RICE-001">
+                  물품 태그 오인식 테스트
+                </button>
+                <button class="ghost-button full" type="button" data-reader="household" data-uid="UNKNOWN-HH">
+                  미등록 가구 테스트
+                </button>
+              </div>
+              <div>
+                <h3>오른쪽 NFC · 물품 태그</h3>
+                <div id="itemButtons" class="button-stack"></div>
+                <button class="danger-button" type="button" data-reader="item" data-uid="HH-UID-001">
+                  가구 카드 오인식 테스트
+                </button>
+                <button class="ghost-button full" type="button" data-reader="item" data-uid="UNKNOWN-ITEM">
+                  미등록 물품 테스트
+                </button>
               </div>
             </div>
-            <div class="flow-step" id="decisionStep">
-              <span class="step-index">3</span>
+          </section>
+
+          <aside class="panel result-panel">
+            <div class="panel-title">
               <div>
-                <strong>정책 판정</strong>
-                <p id="decisionText">대기 중</p>
+                <p class="section-kicker">Decision</p>
+                <h2>실시간 결과</h2>
               </div>
             </div>
-          </div>
-
-          <div class="result-box" id="resultBox">
-            <span class="label">결과</span>
-            <strong id="resultTitle">대기</strong>
-            <p id="resultDetail">정책 엔진 판정 전입니다.</p>
-          </div>
-        </section>
-
-        <section class="panel scan-panel">
-          <div class="panel-title">
-            <h2>스캔 시뮬레이터</h2>
-            <label class="toggle">
-              <input id="visionToggle" type="checkbox" checked />
-              <span>카메라 일치</span>
-            </label>
-          </div>
-
-          <div class="scan-columns">
-            <div>
-              <h3>왼쪽 NFC · 가구</h3>
-              <div id="householdButtons" class="button-stack"></div>
-              <button class="danger-button" type="button" data-reader="household" data-uid="ITEM-UID-RICE-001">
-                물품 태그를 왼쪽에 태그
-              </button>
-              <button class="ghost-button full" type="button" data-reader="household" data-uid="UNKNOWN-HH">
-                미등록 가구 테스트
-              </button>
+            <div class="result-box" id="resultBox">
+              <span class="label">결과</span>
+              <strong id="resultTitle">대기</strong>
+              <p id="resultDetail">정책 엔진 판정 전입니다.</p>
+              <dl id="resultMeta" class="result-meta"></dl>
             </div>
-            <div>
-              <h3>오른쪽 NFC · 물품</h3>
-              <div id="itemButtons" class="button-stack"></div>
-              <button class="danger-button" type="button" data-reader="item" data-uid="HH-UID-001">
-                가구 카드를 오른쪽에 태그
-              </button>
-              <button class="ghost-button full" type="button" data-reader="item" data-uid="UNKNOWN-ITEM">
-                미등록 물품 테스트
-              </button>
+            <div class="compact-list">
+              <h3>현재 재고</h3>
+              <div id="inventory" class="inventory-list"></div>
             </div>
-          </div>
-        </section>
+          </aside>
+        </div>
+      </section>
 
-        <section class="panel data-panel">
-          <div class="panel-title">
-            <h2>재고·거래</h2>
-            <button id="resetData" type="button" class="ghost-button">샘플 초기화</button>
-          </div>
-          <div id="deviceHealth" class="device-health" aria-live="polite"></div>
-          <div id="inventory" class="inventory-list"></div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>시간</th>
-                  <th>가구</th>
-                  <th>물품</th>
-                  <th>결과</th>
-                </tr>
-              </thead>
-              <tbody id="transactions"></tbody>
-            </table>
-          </div>
-        </section>
+      <section id="tab-dashboard" class="tab-panel" aria-label="운영 대시보드">
+        <div class="ops-grid">
+          <section class="panel wide-panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">Control Room</p>
+                <h2>운영 현황</h2>
+              </div>
+              <button id="resetData" type="button" class="ghost-button">샘플 초기화</button>
+            </div>
+            <div id="dashboardMetrics" class="dashboard-metrics"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">Inventory</p>
+                <h2>재고 압박도</h2>
+              </div>
+            </div>
+            <div id="inventoryPressure" class="pressure-list"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">Reason Codes</p>
+                <h2>거절/판정 코드</h2>
+              </div>
+            </div>
+            <div id="reasonCodes" class="reason-list"></div>
+          </section>
+
+          <section class="panel wide-panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">Audit Trail</p>
+                <h2>거래 감사 로그</h2>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>시간</th>
+                    <th>가구</th>
+                    <th>물품</th>
+                    <th>결과</th>
+                    <th>코드</th>
+                    <th>출력</th>
+                  </tr>
+                </thead>
+                <tbody id="auditTransactions"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">Risk Events</p>
+                <h2>주의 이벤트</h2>
+              </div>
+            </div>
+            <div id="riskEvents" class="event-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="tab-policy" class="tab-panel" aria-label="정책 판정">
+        <div class="policy-grid">
+          <section class="panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">Decision Trace</p>
+                <h2>마지막 판정 근거</h2>
+              </div>
+            </div>
+            <div id="decisionChecklist" class="check-list"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">Context</p>
+                <h2>판정 입력값</h2>
+              </div>
+            </div>
+            <dl id="decisionContext" class="context-grid"></dl>
+          </section>
+
+          <section class="panel wide-panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">Allocation Rules</p>
+                <h2>지급 정책 매트릭스</h2>
+              </div>
+            </div>
+            <div id="policyMatrix" class="policy-matrix"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="tab-devices" class="tab-panel" aria-label="장치 진단">
+        <div class="device-layout">
+          <section class="panel wide-panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">Embedded Health</p>
+                <h2>장치 상태</h2>
+              </div>
+            </div>
+            <div id="deviceMatrix" class="device-matrix"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">Quick Health</p>
+                <h2>핵심 장치</h2>
+              </div>
+            </div>
+            <div id="deviceHealth" class="device-health" aria-live="polite"></div>
+          </section>
+
+          <section class="panel hardware-panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">Hardware Flow</p>
+                <h2>임베디드 구성</h2>
+              </div>
+            </div>
+            <div class="hardware-map" aria-label="라즈베리파이 기반 장치 구성">
+              <div class="hardware-node main-node">Raspberry Pi 5</div>
+              <div class="hardware-row">
+                <span>ACR1252U · 가구</span>
+                <span>ACR1252U · 물품</span>
+              </div>
+              <div class="hardware-row">
+                <span>Camera Module 3</span>
+                <span>80mm Printer</span>
+              </div>
+              <div class="hardware-node storage-node">SQLite WAL · Offline-first</div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="tab-experiments" class="tab-panel" aria-label="실험 결과">
+        <div class="experiment-grid">
+          <section class="panel wide-panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">Contest Evidence</p>
+                <h2>검증 지표</h2>
+              </div>
+            </div>
+            <div id="experimentTargets" class="experiment-list"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">Demo Scenario</p>
+                <h2>결선 시연 흐름</h2>
+              </div>
+            </div>
+            <ol class="scenario-list">
+              <li>활성 가구 카드와 물품 태그를 정상 순서로 인식한다.</li>
+              <li>정책 체크리스트가 모두 통과되고 지급확인증을 출력한다.</li>
+              <li>같은 물품 또는 한도 초과 지급을 재시도해 중복 차단을 보여준다.</li>
+              <li>카메라 불일치와 프린터 실패를 분리 처리한다.</li>
+              <li>운영 대시보드에서 재고, 거래, 장치 상태를 확인한다.</li>
+            </ol>
+          </section>
+        </div>
       </section>
     </main>
 

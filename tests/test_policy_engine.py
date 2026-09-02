@@ -24,6 +24,9 @@ class PolicyEngineTest(unittest.TestCase):
         decision = self.engine.evaluate(self.conn, "HH-001", "ITEM-RICE-001")
         self.assertTrue(decision.approved)
         self.assertEqual(decision.reason_code, "OK")
+        self.assertEqual(decision.checks[-1]["key"], "final_decision")
+        self.assertTrue(all(check["status"] == "pass" for check in decision.checks))
+        self.assertEqual(decision.context["allowed_quantity"], 1)
 
     def test_rejects_blocked_household(self) -> None:
         decision = self.engine.evaluate(self.conn, "HH-003", "ITEM-RICE-001")
@@ -39,6 +42,8 @@ class PolicyEngineTest(unittest.TestCase):
         )
         self.assertFalse(decision.approved)
         self.assertEqual(decision.reason_code, "V001")
+        self.assertEqual(decision.checks[-1]["status"], "fail")
+        self.assertFalse(decision.context["vision_verified"])
 
 
 if __name__ == "__main__":

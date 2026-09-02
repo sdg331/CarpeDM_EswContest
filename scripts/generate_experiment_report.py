@@ -138,7 +138,7 @@ def write_reason_csv(conn: sqlite3.Connection, path: Path) -> None:
         """,
     )
     with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
+        writer = csv.writer(f, lineterminator="\n")
         writer.writerow(["reason_code", "reason_message", "count"])
         for row in rows:
             writer.writerow([row["reason_code"], row["reason_message"], row["count"]])

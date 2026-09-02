@@ -37,6 +37,8 @@ class DistributionServiceTest(unittest.TestCase):
 
         self.assertEqual(decision["result"], "APPROVED")
         self.assertEqual(decision["print_status"], "PRINTED")
+        self.assertGreaterEqual(len(decision["checks"]), 6)
+        self.assertEqual(decision["context"]["household_id"], "HH-001")
         self.assertTrue(Path(decision["receipt_path"]).exists())
 
         item_status = self.conn.execute(
