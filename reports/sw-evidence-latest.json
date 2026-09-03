@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-09-02T22:36:18+09:00",
-  "mode": "SW Evidence Mode",
-  "hardware_boundary": "manual/screen/simulated 어댑터 기준이며 물리 장치 신뢰성 수치는 주장하지 않음",
+  "generated_at": "2026-09-03T10:56:38+09:00",
+  "mode": "소프트웨어 점검 모드",
+  "hardware_boundary": "수동 입력, 화면 출력, 카메라 모의 입력 기준이며 물리 장치 신뢰성 수치는 주장하지 않음",
   "summary": {
     "total_cases": 10,
     "passed_cases": 10,
@@ -10,11 +10,15 @@
     "approved": 4,
     "rejected": 3,
     "print_failed": 1,
+    "audit_hashes": 7,
     "reason_counts": {
-      "D001": 1,
-      "D002": 1,
       "OK": 4,
-      "V001": 1
+      "D002": 1,
+      "D001": 1,
+      "V001": 1,
+      "R001": 1,
+      "H001": 1,
+      "I001": 1
     }
   },
   "cases": [
@@ -33,7 +37,9 @@
         "reason_code": "OK",
         "print_status": "PRINTED",
         "transaction_delta": 1,
-        "checks": 7
+        "checks": 7,
+        "policy_version": "POLICY-2026-09",
+        "audit_hash": "BF503FF23D2E160C"
       }
     },
     {
@@ -51,7 +57,9 @@
         "reason_code": "D002",
         "print_status": "NOT_REQUIRED",
         "transaction_delta": 1,
-        "checks": 3
+        "checks": 3,
+        "policy_version": "POLICY-2026-09",
+        "audit_hash": "9A3A68DDDCC0C318"
       }
     },
     {
@@ -69,7 +77,9 @@
         "reason_code": "OK",
         "print_status": "PRINTED",
         "transaction_delta": 1,
-        "checks": 7
+        "checks": 7,
+        "policy_version": "POLICY-2026-09",
+        "audit_hash": "59C37A5B6EF57FF2"
       }
     },
     {
@@ -87,7 +97,9 @@
         "reason_code": "OK",
         "print_status": "PRINTED",
         "transaction_delta": 1,
-        "checks": 7
+        "checks": 7,
+        "policy_version": "POLICY-2026-09",
+        "audit_hash": "5E5DCAB798CEE1AF"
       }
     },
     {
@@ -105,7 +117,9 @@
         "reason_code": "D001",
         "print_status": "NOT_REQUIRED",
         "transaction_delta": 1,
-        "checks": 6
+        "checks": 6,
+        "policy_version": "POLICY-2026-09",
+        "audit_hash": "A0736836ABEC10BB"
       }
     },
     {
@@ -123,7 +137,9 @@
         "reason_code": "V001",
         "print_status": "NOT_REQUIRED",
         "transaction_delta": 1,
-        "checks": 7
+        "checks": 7,
+        "policy_version": "POLICY-2026-09",
+        "audit_hash": "9D098C8515AF7AE3"
       }
     },
     {
@@ -141,7 +157,9 @@
         "reason_code": "R001",
         "print_status": "NOT_REQUIRED",
         "transaction_delta": 0,
-        "checks": 0
+        "checks": 0,
+        "policy_version": "",
+        "audit_hash": ""
       }
     },
     {
@@ -159,7 +177,9 @@
         "reason_code": "H001",
         "print_status": "NOT_REQUIRED",
         "transaction_delta": 0,
-        "checks": 0
+        "checks": 0,
+        "policy_version": "",
+        "audit_hash": ""
       }
     },
     {
@@ -177,7 +197,9 @@
         "reason_code": "I001",
         "print_status": "NOT_REQUIRED",
         "transaction_delta": 0,
-        "checks": 0
+        "checks": 0,
+        "policy_version": "",
+        "audit_hash": ""
       }
     },
     {
@@ -195,7 +217,9 @@
         "reason_code": "OK",
         "print_status": "FAILED",
         "transaction_delta": 1,
-        "checks": 7
+        "checks": 7,
+        "policy_version": "POLICY-2026-09",
+        "audit_hash": "0941E0DA39CCA6CF"
       }
     }
   ]

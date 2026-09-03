@@ -8,4 +8,5 @@ data/*.db
 data/*.db-shm
 data/*.db-wal
 data/receipts/
+data/sw-evidence-receipts/
 .venv/

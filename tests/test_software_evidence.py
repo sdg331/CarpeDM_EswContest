@@ -23,8 +23,12 @@ class SoftwareEvidenceTest(unittest.TestCase):
             self.assertGreaterEqual(summary["reason_counts"]["OK"], 3)
             self.assertEqual(summary["reason_counts"]["D001"], 1)
             self.assertEqual(summary["reason_counts"]["D002"], 1)
+            self.assertEqual(summary["reason_counts"]["R001"], 1)
+            self.assertEqual(summary["reason_counts"]["H001"], 1)
+            self.assertEqual(summary["reason_counts"]["I001"], 1)
             self.assertEqual(summary["reason_counts"]["V001"], 1)
             self.assertEqual(summary["print_failed"], 1)
+            self.assertEqual(summary["audit_hashes"], summary["transactions"])
 
     def test_evidence_snapshot_uses_latest_suite_without_claiming_physical_hardware(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -55,7 +59,8 @@ class SoftwareEvidenceTest(unittest.TestCase):
             self.assertFalse(evidence["mode"]["hardware_available"])
             self.assertTrue(evidence["latest_suite"]["available"])
             self.assertEqual(evidence["latest_suite"]["summary"]["failed_cases"], 0)
-            self.assertIn("실장비", evidence["mode"]["boundary"])
+            self.assertIn("감사 추적 무결성", [row["name"] for row in evidence["pillars"]])
+            self.assertIn("물리 성능", evidence["mode"]["boundary"])
 
 
 if __name__ == "__main__":

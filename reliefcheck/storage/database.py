@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sqlite3
@@ -98,7 +99,92 @@ def init_db(conn: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_households_card_uid ON households(card_uid);
         """
     )
+    ensure_distribution_audit_columns(conn)
+    backfill_distribution_audit(conn)
     conn.commit()
+
+
+def ensure_distribution_audit_columns(conn: sqlite3.Connection) -> None:
+    existing = {row["name"] for row in conn.execute("PRAGMA table_info(distributions)").fetchall()}
+    columns = {
+        "policy_version": "TEXT NOT NULL DEFAULT 'POLICY-2026-09'",
+        "decision_checks": "TEXT NOT NULL DEFAULT '[]'",
+        "decision_context": "TEXT NOT NULL DEFAULT '{}'",
+        "audit_hash": "TEXT NOT NULL DEFAULT ''",
+    }
+    for name, definition in columns.items():
+        if name not in existing:
+            conn.execute(f"ALTER TABLE distributions ADD COLUMN {name} {definition}")
+
+
+def backfill_distribution_audit(conn: sqlite3.Connection) -> None:
+    rows = conn.execute(
+        """
+        SELECT
+            transaction_id,
+            household_id,
+            item_id,
+            item_type,
+            result,
+            reason_code,
+            reason_message,
+            created_at,
+            print_status,
+            policy_version
+        FROM distributions
+        WHERE audit_hash = ''
+        """
+    ).fetchall()
+    for row in rows:
+        checks = [
+            {
+                "key": "migration_record",
+                "label": "기존 거래 이관",
+                "status": "pass",
+                "detail": f"{row['result']} / {row['reason_code']} 원장 보존",
+            }
+        ]
+        context = {
+            "household_id": row["household_id"],
+            "item_id": row["item_id"],
+            "item_type": row["item_type"],
+            "print_status": row["print_status"],
+            "migrated": True,
+        }
+        audit_hash = distribution_audit_hash(
+            {
+                "transaction_id": row["transaction_id"],
+                "household_id": row["household_id"],
+                "item_id": row["item_id"],
+                "item_type": row["item_type"],
+                "result": row["result"],
+                "reason_code": row["reason_code"],
+                "created_at": row["created_at"],
+                "policy_version": row["policy_version"],
+                "checks": checks,
+                "context": context,
+            }
+        )
+        conn.execute(
+            """
+            UPDATE distributions
+            SET decision_checks = ?,
+                decision_context = ?,
+                audit_hash = ?
+            WHERE transaction_id = ?
+            """,
+            (
+                json.dumps(checks, ensure_ascii=False, sort_keys=True),
+                json.dumps(context, ensure_ascii=False, sort_keys=True),
+                audit_hash,
+                row["transaction_id"],
+            ),
+        )
+
+
+def distribution_audit_hash(payload: dict[str, Any]) -> str:
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16].upper()
 
 
 def reset_db(conn: sqlite3.Connection) -> None:
@@ -254,7 +340,9 @@ def fetch_recent_transactions(conn: sqlite3.Connection, limit: int = 20) -> list
             d.reason_message,
             d.created_at,
             d.print_status,
-            d.receipt_path
+            d.receipt_path,
+            d.policy_version,
+            d.audit_hash
         FROM distributions d
         LEFT JOIN households h ON h.household_id = d.household_id
         LEFT JOIN items i ON i.item_id = d.item_id

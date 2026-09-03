@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ReliefCheck Operations Console</title>
+    <title>ReliefCheck 현장 운영 콘솔</title>
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%231769e0'/%3E%3Cpath d='M18 33h28M32 19v28' stroke='white' stroke-width='7' stroke-linecap='round'/%3E%3C/svg%3E"
@@ -14,7 +14,7 @@
     <main class="shell">
       <header class="topbar">
         <div class="brand">
-          <p class="eyebrow">Offline-first Embedded Relief System</p>
+          <p class="eyebrow">대피소 물품 지급 관리</p>
           <h1>ReliefCheck</h1>
           <p class="brand-copy">대피소 구호물자 지급, 중복 차단, 장치 상태를 한 번에 통제하는 현장 콘솔</p>
         </div>
@@ -34,7 +34,7 @@
         <button class="tab-button" type="button" data-tab-target="dashboard" aria-selected="false">운영 대시보드</button>
         <button class="tab-button" type="button" data-tab-target="policy" aria-selected="false">정책 판정</button>
         <button class="tab-button" type="button" data-tab-target="devices" aria-selected="false">장치 진단</button>
-        <button class="tab-button" type="button" data-tab-target="software" aria-selected="false">SW 검증</button>
+        <button class="tab-button" type="button" data-tab-target="software" aria-selected="false">검증 기록</button>
         <button class="tab-button" type="button" data-tab-target="experiments" aria-selected="false">실험 결과</button>
       </nav>
 
@@ -43,7 +43,7 @@
           <section class="panel primary-panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Live Session</p>
+                <p class="section-kicker">현장 세션</p>
                 <h2>지급 진행</h2>
               </div>
               <button id="resetSession" type="button" class="ghost-button">새 세션</button>
@@ -79,7 +79,7 @@
           <section class="panel scan-panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Dual Reader</p>
+                <p class="section-kicker">리더 입력</p>
                 <h2>태그 입력 콘솔</h2>
               </div>
               <label class="toggle">
@@ -115,7 +115,7 @@
           <aside class="panel result-panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Decision</p>
+                <p class="section-kicker">판정 결과</p>
                 <h2>실시간 결과</h2>
               </div>
             </div>
@@ -138,7 +138,7 @@
           <section class="panel wide-panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Control Room</p>
+                <p class="section-kicker">상황판</p>
                 <h2>운영 현황</h2>
               </div>
               <button id="resetData" type="button" class="ghost-button">샘플 초기화</button>
@@ -149,7 +149,17 @@
           <section class="panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Inventory</p>
+                <p class="section-kicker">운영 위험도</p>
+                <h2>운영 리스크</h2>
+              </div>
+            </div>
+            <div id="riskAssessment" class="risk-assessment"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">재고</p>
                 <h2>재고 압박도</h2>
               </div>
             </div>
@@ -159,7 +169,7 @@
           <section class="panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Reason Codes</p>
+                <p class="section-kicker">판정 코드</p>
                 <h2>거절/판정 코드</h2>
               </div>
             </div>
@@ -169,7 +179,7 @@
           <section class="panel wide-panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Audit Trail</p>
+                <p class="section-kicker">감사 기록</p>
                 <h2>거래 감사 로그</h2>
               </div>
             </div>
@@ -181,8 +191,9 @@
                     <th>가구</th>
                     <th>물품</th>
                     <th>결과</th>
-                    <th>코드</th>
-                    <th>출력</th>
+                    <th>정책</th>
+                    <th>체크</th>
+                    <th>해시</th>
                   </tr>
                 </thead>
                 <tbody id="auditTransactions"></tbody>
@@ -193,7 +204,7 @@
           <section class="panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Risk Events</p>
+                <p class="section-kicker">주의 기록</p>
                 <h2>주의 이벤트</h2>
               </div>
             </div>
@@ -207,7 +218,7 @@
           <section class="panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Decision Trace</p>
+                <p class="section-kicker">판정 근거</p>
                 <h2>마지막 판정 근거</h2>
               </div>
             </div>
@@ -217,7 +228,7 @@
           <section class="panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Context</p>
+                <p class="section-kicker">입력값</p>
                 <h2>판정 입력값</h2>
               </div>
             </div>
@@ -227,7 +238,7 @@
           <section class="panel wide-panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Allocation Rules</p>
+                <p class="section-kicker">지급 기준</p>
                 <h2>지급 정책 매트릭스</h2>
               </div>
             </div>
@@ -241,7 +252,7 @@
           <section class="panel wide-panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Embedded Health</p>
+                <p class="section-kicker">장치 상태</p>
                 <h2>장치 상태</h2>
               </div>
             </div>
@@ -251,7 +262,7 @@
           <section class="panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Quick Health</p>
+                <p class="section-kicker">상태 요약</p>
                 <h2>핵심 장치</h2>
               </div>
             </div>
@@ -261,7 +272,7 @@
           <section class="panel hardware-panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Hardware Flow</p>
+                <p class="section-kicker">연결 구조</p>
                 <h2>임베디드 구성</h2>
               </div>
             </div>
@@ -286,7 +297,7 @@
           <section class="panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">SW Evidence Mode</p>
+                <p class="section-kicker">검증 범위</p>
                 <h2>검증 경계</h2>
               </div>
             </div>
@@ -296,18 +307,28 @@
           <section class="panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Readiness</p>
-                <h2>소프트웨어 준비도</h2>
+                <p class="section-kicker">점검 결과</p>
+                <h2>소프트웨어 점검</h2>
               </div>
             </div>
             <div id="softwareScore" class="software-score"></div>
           </section>
 
+          <section class="panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">최근 실행</p>
+                <h2>최근 실행 결과</h2>
+              </div>
+            </div>
+            <div id="softwareLatest" class="latest-suite"></div>
+          </section>
+
           <section class="panel wide-panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Quality Pillars</p>
-                <h2>품질 축</h2>
+                <p class="section-kicker">점검 항목</p>
+                <h2>소프트웨어 점검 항목</h2>
               </div>
             </div>
             <div id="softwarePillars" class="pillar-list"></div>
@@ -316,8 +337,8 @@
           <section class="panel wide-panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Automated Scenarios</p>
-                <h2>자동 검증 시나리오</h2>
+                <p class="section-kicker">시험 항목</p>
+                <h2>반복 시험 결과</h2>
               </div>
             </div>
             <div id="softwareScenarios" class="scenario-grid"></div>
@@ -326,21 +347,25 @@
           <section class="panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Boundary</p>
-                <h2>실장비 미연동 표시</h2>
+                <p class="section-kicker">장비 경계</p>
+                <h2>현재 확인 범위</h2>
               </div>
             </div>
             <div id="softwareBoundary" class="boundary-list"></div>
           </section>
 
-          <section class="panel">
+          <section class="panel full-panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Latest Suite</p>
-                <h2>최근 실행 결과</h2>
+                <p class="section-kicker">코드 범위</p>
+                <h2>판정 코드 확인</h2>
               </div>
             </div>
-            <div id="softwareLatest" class="latest-suite"></div>
+            <div class="coverage-strip">
+              <div><span>핵심 정책</span><strong>OK / D001 / D002 / V001</strong></div>
+              <div><span>입력 오류</span><strong>R001 / H001 / I001</strong></div>
+              <div><span>장애 처리</span><strong>출력 실패 분리</strong></div>
+            </div>
           </section>
         </div>
       </section>
@@ -350,7 +375,7 @@
           <section class="panel wide-panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Contest Evidence</p>
+                <p class="section-kicker">제출 근거</p>
                 <h2>검증 지표</h2>
               </div>
             </div>
@@ -360,7 +385,7 @@
           <section class="panel">
             <div class="panel-title">
               <div>
-                <p class="section-kicker">Demo Scenario</p>
+                <p class="section-kicker">시연 순서</p>
                 <h2>결선 시연 흐름</h2>
               </div>
             </div>

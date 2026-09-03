@@ -11,7 +11,7 @@ from typing import Any
 from reliefcheck.core.session import KioskSession
 from reliefcheck.devices.printer import ScreenPrinter
 from reliefcheck.policy.rule_engine import PolicyEngine
-from reliefcheck.services.distribution import DistributionService
+from reliefcheck.services.distribution import POLICY_VERSION, DistributionService
 from reliefcheck.storage.database import PROJECT_ROOT, connect, ensure_ready
 
 
@@ -23,37 +23,43 @@ SOFTWARE_PILLARS = (
     {
         "key": "policy_trace",
         "name": "정책 판정 추적성",
-        "weight": 18,
+        "weight": 16,
         "evidence": "가구, 물품, 재고, 한도, 카메라 검증을 체크리스트로 노출",
+    },
+    {
+        "key": "audit_integrity",
+        "name": "감사 추적 무결성",
+        "weight": 14,
+        "evidence": "정책 버전, 판정 체크리스트, 입력 컨텍스트, 감사 해시를 거래와 함께 저장",
     },
     {
         "key": "ledger_integrity",
         "name": "거래 원장 무결성",
-        "weight": 18,
+        "weight": 14,
         "evidence": "승인/거절 결과와 출력 상태를 SQLite WAL 원장에 분리 저장",
     },
     {
         "key": "fault_isolation",
         "name": "장애 격리",
-        "weight": 16,
+        "weight": 14,
         "evidence": "프린터 실패가 지급 승인 취소나 중복 지급으로 이어지지 않도록 분리",
     },
     {
         "key": "observability",
         "name": "운영 관측성",
-        "weight": 16,
+        "weight": 14,
         "evidence": "운영 지표, 재고 압박도, 장치 상태, 거절 코드, 위험 이벤트를 API로 제공",
     },
     {
         "key": "security_boundary",
         "name": "보안 경계",
-        "weight": 14,
+        "weight": 12,
         "evidence": "공개 API에서 확인증 파일 경로를 제거하고 데모 초기화를 제한",
     },
     {
         "key": "reproducible_suite",
         "name": "재현 가능한 검증",
-        "weight": 18,
+        "weight": 16,
         "evidence": "실장비 없이 동일한 결과를 재생성하는 SW evidence suite 제공",
     },
 )
@@ -69,6 +75,10 @@ def build_software_evidence(
     suite_summary = latest.get("summary", {}) if latest else {}
     suite_reason_counts = normalize_reason_counts(suite_summary.get("reason_counts", {}))
     merged_reason_counts = merge_reason_counts(reason_counts, suite_reason_counts)
+    audit_hashes = max(
+        fetch_scalar(conn, "SELECT COUNT(*) FROM distributions WHERE audit_hash <> ''"),
+        int(suite_summary.get("audit_hashes") or 0),
+    )
     print_failed = max(
         fetch_scalar(
             conn,
@@ -80,6 +90,7 @@ def build_software_evidence(
     pillars = build_pillars(
         health=health,
         reason_counts=merged_reason_counts,
+        audit_hashes=audit_hashes,
         print_failed=print_failed,
         suite_passed=suite_passed,
     )
@@ -88,10 +99,10 @@ def build_software_evidence(
 
     return {
         "mode": {
-            "name": "SW Evidence Mode",
+            "name": "소프트웨어 점검 모드",
             "hardware_available": False,
-            "position": "실장비 연동 전에도 정책, 거래, 장애 격리, 관측성, 보안 경계를 재현 가능한 테스트로 증명",
-            "boundary": "실장비의 NFC/프린터/카메라 물리 성능은 주장하지 않고, 장치 어댑터와 실패 처리까지 검증",
+            "position": "장비 연결 전에도 지급 기준, 거래 기록, 장애 분리, 공개 응답 범위를 반복 점검",
+            "boundary": "NFC, 프린터, 카메라의 물리 성능 수치는 현장 장비 연결 후 별도 기록",
         },
         "readiness": {
             "score": round((earned / total) * 100, 1) if total else 0.0,
@@ -109,12 +120,14 @@ def build_software_evidence(
 def build_pillars(
     health: dict[str, Any],
     reason_counts: dict[str, int],
+    audit_hashes: int,
     print_failed: int,
     suite_passed: bool,
 ) -> list[dict[str, Any]]:
     observed_codes = set(reason_counts)
     checks = {
         "policy_trace": {"ok": {"OK", "D001", "D002", "V001"}.issubset(observed_codes), "detail": "핵심 판정 코드 4종 확인"},
+        "audit_integrity": {"ok": audit_hashes > 0, "detail": f"정책 버전·감사 해시 {audit_hashes}건 저장"},
         "ledger_integrity": {"ok": bool(health.get("database", {}).get("ok")), "detail": "SQLite 연결 및 쓰기 가능"},
         "fault_isolation": {
             "ok": print_failed > 0 or suite_passed,
@@ -335,8 +348,8 @@ def run_software_evidence_suite(
     conn.close()
     return {
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
-        "mode": "SW Evidence Mode",
-        "hardware_boundary": "manual/screen/simulated 어댑터 기준이며 물리 장치 신뢰성 수치는 주장하지 않음",
+        "mode": "소프트웨어 점검 모드",
+        "hardware_boundary": "수동 입력, 화면 출력, 카메라 모의 입력 기준이며 물리 장치 신뢰성 수치는 주장하지 않음",
         "summary": summary,
         "cases": cases,
     }
@@ -370,12 +383,16 @@ def run_case(
         "print_status": decision.get("print_status", "NOT_REQUIRED"),
         "transaction_delta": after - before,
         "checks": len(decision.get("checks", [])),
+        "policy_version": decision.get("policy_version", ""),
+        "audit_hash": decision.get("audit_hash", ""),
     }
     passed = (
         actual["result"] == expected_result
         and actual["reason_code"] == expected_code
         and actual["transaction_delta"] == expected_delta
     )
+    if expected_delta > 0:
+        passed = passed and actual["policy_version"] == POLICY_VERSION and bool(actual["audit_hash"])
     if expected_print_status is not None:
         passed = passed and actual["print_status"] == expected_print_status
 
@@ -408,8 +425,18 @@ def build_suite_summary(conn: sqlite3.Connection, cases: list[dict[str, Any]]) -
         "approved": fetch_scalar(conn, "SELECT COUNT(*) FROM distributions WHERE result = 'APPROVED'"),
         "rejected": fetch_scalar(conn, "SELECT COUNT(*) FROM distributions WHERE result = 'REJECTED'"),
         "print_failed": fetch_scalar(conn, "SELECT COUNT(*) FROM distributions WHERE print_status = 'FAILED'"),
-        "reason_counts": fetch_reason_count_map(conn),
+        "audit_hashes": fetch_scalar(conn, "SELECT COUNT(*) FROM distributions WHERE audit_hash <> ''"),
+        "reason_counts": count_case_reason_codes(cases),
     }
+
+
+def count_case_reason_codes(cases: list[dict[str, Any]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for case in cases:
+        code = str(case.get("actual", {}).get("reason_code") or "")
+        if code:
+            counts[code] = counts.get(code, 0) + 1
+    return counts
 
 
 def write_software_evidence_files(
@@ -446,6 +473,7 @@ def render_software_evidence_markdown(suite: dict[str, Any]) -> str:
         f"| 승인 | {summary['approved']} |",
         f"| 거절 | {summary['rejected']} |",
         f"| 출력 실패 격리 | {summary['print_failed']} |",
+        f"| 감사 해시 저장 | {summary['audit_hashes']} |",
         "",
         "## 시나리오 결과",
         "",
@@ -544,9 +572,9 @@ def readiness_label(earned: int, total: int) -> str:
         return "점검 필요"
     ratio = earned / total
     if ratio >= 0.9:
-        return "SW 제출 준비 높음"
+        return "점검 기준 충족"
     if ratio >= 0.7:
-        return "SW 근거 보강 중"
+        return "보강 항목 확인"
     return "검증 실행 필요"
 
 

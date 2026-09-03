@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 from datetime import datetime
 from typing import Any
@@ -10,6 +11,8 @@ from reliefcheck.services.evidence import build_software_evidence
 def operational_snapshot(conn: sqlite3.Connection, health: dict[str, Any]) -> dict[str, Any]:
     today = datetime.now().date().isoformat()
     totals = fetch_transaction_totals(conn, today)
+    inventory_pressure = fetch_inventory_pressure(conn)
+    reason_codes = fetch_reason_codes(conn)
     return {
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "shelter": {
@@ -18,9 +21,11 @@ def operational_snapshot(conn: sqlite3.Connection, health: dict[str, Any]) -> di
             "operation_state": "운영 가능" if health.get("ok") else "점검 필요",
         },
         "metrics": totals,
-        "inventory_pressure": fetch_inventory_pressure(conn),
-        "reason_codes": fetch_reason_codes(conn),
+        "risk_assessment": build_risk_assessment(totals, inventory_pressure, reason_codes, health),
+        "inventory_pressure": inventory_pressure,
+        "reason_codes": reason_codes,
         "policy_matrix": fetch_policy_matrix(conn),
+        "audit_trail": fetch_audit_trail(conn),
         "risk_events": fetch_risk_events(conn),
         "device_matrix": build_device_matrix(health),
         "experiment_targets": build_experiment_targets(totals, health),
@@ -118,6 +123,140 @@ def fetch_reason_codes(conn: sqlite3.Connection) -> list[dict[str, Any]]:
         """
     ).fetchall()
     return [dict(row) for row in rows]
+
+
+def fetch_audit_trail(conn: sqlite3.Connection, limit: int = 8) -> list[dict[str, Any]]:
+    rows = conn.execute(
+        """
+        SELECT
+            d.transaction_id,
+            d.household_id,
+            d.item_id,
+            COALESCE(it.name, d.item_type, '') AS item_name,
+            d.result,
+            d.reason_code,
+            d.created_at,
+            d.print_status,
+            d.policy_version,
+            d.decision_checks,
+            d.decision_context,
+            d.audit_hash
+        FROM distributions d
+        LEFT JOIN items i ON i.item_id = d.item_id
+        LEFT JOIN item_types it ON it.item_type = COALESCE(i.item_type, d.item_type)
+        ORDER BY d.created_at DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    audit_rows = []
+    for row in rows:
+        checks = parse_json_list(row["decision_checks"])
+        context = parse_json_dict(row["decision_context"])
+        failed_check = next((check for check in checks if check.get("status") == "fail"), None)
+        audit_rows.append(
+            {
+                "transaction_id": row["transaction_id"],
+                "household_id": row["household_id"],
+                "item_id": row["item_id"],
+                "item_name": row["item_name"],
+                "result": row["result"],
+                "reason_code": row["reason_code"],
+                "created_at": row["created_at"],
+                "print_status": row["print_status"],
+                "policy_version": row["policy_version"],
+                "audit_hash": row["audit_hash"],
+                "check_count": len(checks),
+                "failed_check": failed_check.get("label", "") if failed_check else "",
+                "context_keys": sorted(context.keys()),
+            }
+        )
+    return audit_rows
+
+
+def build_risk_assessment(
+    totals: dict[str, Any],
+    inventory_pressure: list[dict[str, Any]],
+    reason_codes: list[dict[str, Any]],
+    health: dict[str, Any],
+) -> dict[str, Any]:
+    total = int(totals.get("total") or 0)
+    rejected = int(totals.get("rejected") or 0)
+    duplicate_blocks = int(totals.get("duplicate_blocks") or 0)
+    print_failed = int(totals.get("print_failed") or 0)
+    rejection_rate = round((rejected / total) * 100, 1) if total else 0.0
+    duplicate_rate = round((duplicate_blocks / total) * 100, 1) if total else 0.0
+    critical_inventory = [row for row in inventory_pressure if row.get("risk_level") == "critical"]
+    watch_inventory = [row for row in inventory_pressure if row.get("risk_level") == "watch"]
+    device_down = not bool(health.get("ok"))
+
+    factors: list[dict[str, Any]] = []
+    score = 100
+    if device_down:
+        score -= 30
+        factors.append({"level": "critical", "label": "장치/DB 헬스체크", "detail": "운영 전 점검 필요"})
+    if critical_inventory:
+        score -= min(30, 12 * len(critical_inventory))
+        names = ", ".join(row["name"] for row in critical_inventory)
+        factors.append({"level": "critical", "label": "재고 소진", "detail": names})
+    if watch_inventory:
+        score -= min(12, 4 * len(watch_inventory))
+        names = ", ".join(row["name"] for row in watch_inventory)
+        factors.append({"level": "watch", "label": "재고 주의", "detail": names})
+    if rejection_rate >= 45:
+        score -= 14
+        factors.append({"level": "watch", "label": "거절 비율", "detail": f"{rejection_rate}% 누적"})
+    if duplicate_rate >= 25:
+        score -= 10
+        factors.append({"level": "watch", "label": "중복 시도", "detail": f"{duplicate_rate}% 누적"})
+    if print_failed > 0:
+        score -= 8
+        factors.append({"level": "watch", "label": "출력 실패 격리", "detail": f"{print_failed}건"})
+
+    if not factors:
+        factors.append({"level": "stable", "label": "운영 리스크", "detail": "현재 즉시 조치 항목 없음"})
+
+    score = max(0, score)
+    level = "stable"
+    if score < 60 or any(row["level"] == "critical" for row in factors):
+        level = "critical"
+    elif score < 82 or any(row["level"] == "watch" for row in factors):
+        level = "watch"
+
+    top_reason = reason_codes[0]["reason_code"] if reason_codes else "-"
+    return {
+        "score": score,
+        "level": level,
+        "label": risk_assessment_label(level),
+        "rejection_rate": rejection_rate,
+        "duplicate_rate": duplicate_rate,
+        "top_reason_code": top_reason,
+        "factors": factors[:5],
+    }
+
+
+def risk_assessment_label(level: str) -> str:
+    if level == "critical":
+        return "즉시 조치 필요"
+    if level == "watch":
+        return "운영 주의"
+    return "운영 안정"
+
+
+def parse_json_list(raw: str | None) -> list[dict[str, Any]]:
+    try:
+        value = json.loads(raw or "[]")
+    except json.JSONDecodeError:
+        return []
+    return value if isinstance(value, list) else []
+
+
+def parse_json_dict(raw: str | None) -> dict[str, Any]:
+    try:
+        value = json.loads(raw or "{}")
+    except json.JSONDecodeError:
+        return {}
+    return value if isinstance(value, dict) else {}
 
 
 def fetch_policy_matrix(conn: sqlite3.Connection) -> list[dict[str, Any]]:

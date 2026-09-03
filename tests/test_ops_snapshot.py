@@ -52,6 +52,12 @@ class OperationalSnapshotTest(unittest.TestCase):
         self.assertGreaterEqual(len(snapshot["inventory_pressure"]), 3)
         self.assertGreaterEqual(len(snapshot["policy_matrix"]), 3)
         self.assertEqual(len(snapshot["device_matrix"]), 5)
+        self.assertIn("risk_assessment", snapshot)
+        self.assertIn(snapshot["risk_assessment"]["level"], {"stable", "watch", "critical"})
+        self.assertEqual(len(snapshot["audit_trail"]), 1)
+        self.assertEqual(snapshot["audit_trail"][0]["policy_version"], "POLICY-2026-09")
+        self.assertRegex(snapshot["audit_trail"][0]["audit_hash"], r"^[A-F0-9]{16}$")
+        self.assertGreaterEqual(snapshot["audit_trail"][0]["check_count"], 6)
 
 
 if __name__ == "__main__":

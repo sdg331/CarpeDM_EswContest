@@ -25,7 +25,8 @@ def generate_markdown(conn: sqlite3.Connection) -> str:
                 SUM(CASE WHEN result = 'APPROVED' THEN 1 ELSE 0 END) AS approved,
                 SUM(CASE WHEN result = 'REJECTED' THEN 1 ELSE 0 END) AS rejected,
                 SUM(CASE WHEN print_status = 'PRINTED' THEN 1 ELSE 0 END) AS printed,
-                SUM(CASE WHEN print_status = 'FAILED' THEN 1 ELSE 0 END) AS print_failed
+                SUM(CASE WHEN print_status = 'FAILED' THEN 1 ELSE 0 END) AS print_failed,
+                SUM(CASE WHEN audit_hash <> '' THEN 1 ELSE 0 END) AS audit_hashes
             FROM distributions
             """
         ).fetchone()
@@ -51,7 +52,7 @@ def generate_markdown(conn: sqlite3.Connection) -> str:
     recent = fetch_rows(
         conn,
         """
-        SELECT created_at, household_id, item_id, result, reason_code, print_status
+        SELECT created_at, household_id, item_id, result, reason_code, print_status, policy_version, audit_hash
         FROM distributions
         ORDER BY created_at DESC
         LIMIT 10
@@ -70,6 +71,7 @@ def generate_markdown(conn: sqlite3.Connection) -> str:
         f"| 거절 | {totals['rejected'] or 0} |",
         f"| 출력 완료 | {totals['printed'] or 0} |",
         f"| 출력 실패 | {totals['print_failed'] or 0} |",
+        f"| 감사 해시 저장 | {totals['audit_hashes'] or 0} |",
         "",
         "## 거절/판정 코드",
         "",
@@ -100,17 +102,17 @@ def generate_markdown(conn: sqlite3.Connection) -> str:
             "",
             "## 최근 거래",
             "",
-            "| 시간 | 가구 | 물품 | 결과 | 코드 | 출력 |",
-            "|---|---|---|---|---|---|",
+            "| 시간 | 가구 | 물품 | 결과 | 코드 | 출력 | 정책 | 감사 해시 |",
+            "|---|---|---|---|---|---|---|---|",
         ]
     )
     if recent:
         lines.extend(
-            f"| {row['created_at']} | {row['household_id']} | {row['item_id']} | {row['result']} | {row['reason_code']} | {row['print_status']} |"
+            f"| {row['created_at']} | {row['household_id']} | {row['item_id']} | {row['result']} | {row['reason_code']} | {row['print_status']} | {row['policy_version']} | {row['audit_hash']} |"
             for row in recent
         )
     else:
-        lines.append("| - | - | - | - | - | - |")
+        lines.append("| - | - | - | - | - | - | - | - |")
 
     lines.extend(
         [
@@ -119,6 +121,7 @@ def generate_markdown(conn: sqlite3.Connection) -> str:
             "",
             "- 승인 거래와 출력 상태를 분리하여 프린터 실패가 중복 지급으로 이어지지 않도록 설계했다.",
             "- 동일 개별 물품 ID 재처리와 가구별 지급 한도 초과를 별도 코드로 차단한다.",
+            "- 각 거래는 정책 버전, 판정 체크리스트, 입력 컨텍스트, 감사 해시를 남겨 사후 설명과 검증이 가능하다.",
             "- 실제 제출 전에는 NFC 100회 반복, 프린터 연속 출력, 전원 재인가 복구 시험 결과를 이 표에 추가한다.",
             "",
         ]

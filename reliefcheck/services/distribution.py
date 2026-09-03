@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import sqlite3
 from datetime import datetime, timezone
 from typing import Any
@@ -15,6 +17,9 @@ from reliefcheck.storage.database import (
     lookup_uid,
     rebuild_inventory,
 )
+
+
+POLICY_VERSION = "POLICY-2026-09"
 
 
 def now_iso() -> str:
@@ -111,6 +116,22 @@ class DistributionService:
             )
             tx_id = transaction_id()
             created_at = now_iso()
+            decision_checks = list(decision.checks)
+            decision_context = dict(decision.context)
+            audit_hash = build_audit_hash(
+                {
+                    "transaction_id": tx_id,
+                    "household_id": household["household_id"],
+                    "item_id": item["item_id"],
+                    "item_type": item["item_type"],
+                    "result": decision.result,
+                    "reason_code": decision.reason_code,
+                    "created_at": created_at,
+                    "policy_version": POLICY_VERSION,
+                    "checks": decision_checks,
+                    "context": decision_context,
+                }
+            )
 
             if decision.approved:
                 self.conn.execute(
@@ -141,9 +162,13 @@ class DistributionService:
                     reason_code,
                     reason_message,
                     created_at,
-                    print_status
+                    print_status,
+                    policy_version,
+                    decision_checks,
+                    decision_context,
+                    audit_hash
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     tx_id,
@@ -155,6 +180,10 @@ class DistributionService:
                     decision.reason_message,
                     created_at,
                     print_status,
+                    POLICY_VERSION,
+                    json.dumps(decision_checks, ensure_ascii=False, sort_keys=True),
+                    json.dumps(decision_context, ensure_ascii=False, sort_keys=True),
+                    audit_hash,
                 ),
             )
 
@@ -168,8 +197,10 @@ class DistributionService:
             "reason_code": decision.reason_code,
             "reason_message": decision.reason_message,
             "print_status": self._fetch_print_status(tx_id),
-            "checks": list(decision.checks),
-            "context": decision.context,
+            "policy_version": POLICY_VERSION,
+            "audit_hash": audit_hash,
+            "checks": decision_checks,
+            "context": decision_context,
         }
         if receipt_path:
             decision_payload["receipt_path"] = receipt_path
@@ -228,6 +259,8 @@ class DistributionService:
                 "reason_code": transaction["reason_code"],
                 "reason_message": transaction["reason_message"],
                 "print_status": status,
+                "policy_version": transaction["policy_version"],
+                "audit_hash": transaction["audit_hash"],
                 "receipt_path": receipt_path,
                 "checks": [],
                 "context": {},
@@ -299,3 +332,8 @@ def public_transactions(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         public["receipt_available"] = bool(receipt_path)
         sanitized.append(public)
     return sanitized
+
+
+def build_audit_hash(payload: dict[str, Any]) -> str:
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16].upper()

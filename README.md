@@ -8,6 +8,8 @@
 - SQLite 로컬 DB: 가구, 물품, 재고, 정책, 거래, 장치 로그
 - 정책 엔진: 지급 한도, 동일 물품 재처리, 재고 부족, 카메라 불일치
 - 거래 무결성: DB COMMIT 후 출력 상태 갱신
+- 거래 감사 추적: 정책 버전, 판정 체크리스트, 입력 컨텍스트, 감사 해시 저장
+- 운영 리스크 점수화: 재고 소진, 거절률, 중복 시도, 출력 실패를 운영 대시보드에서 통합 판단
 - 프린터 백엔드: 개발용 화면 파일, CUPS, ESC/POS USB 어댑터
 - NFC 백엔드: 개발용 수동 입력, ACR1252U/PCSC 어댑터
 - 카메라 백엔드: 개발용 시뮬레이션, OpenCV QR 교차검증 어댑터
@@ -61,6 +63,12 @@ python scripts/generate_experiment_report.py
 python scripts/run_sw_evidence_suite.py
 ```
 
+하드웨어 사전 점검:
+
+```bash
+python scripts/hardware_preflight.py
+```
+
 ## 주요 파일
 
 | 경로 | 역할 |
@@ -75,8 +83,10 @@ python scripts/run_sw_evidence_suite.py
 | `reliefcheck/devices/printer.py` | 프린터 어댑터 |
 | `reliefcheck/devices/nfc_acr1252u.py` | ACR1252U/PCSC NFC 어댑터 |
 | `reliefcheck/vision/item_verification.py` | QR 카메라 검증 어댑터 |
+| `scripts/hardware_preflight.py` | Pi, USB, PC/SC, 프린터, 카메라 사전 진단 |
 | `reliefcheck/config/` | 시연용 정책과 샘플 데이터 |
 | `docs/` | 아키텍처, 하드웨어 bring-up, 시험 계획 |
+| `docs/08-hardware-bringup-session.md` | 실제 장비 연결 단계별 진행표 |
 | `docs/04-ui-design-application.md` | Apple 레퍼런스 디자인 적용 기준 |
 | `docs/07-competition-readiness.md` | 대상급 시연 완성도 점검표 |
 | `reports/sw-evidence-summary.md` | 실장비 미연동 시 소프트웨어 검증 증거 |

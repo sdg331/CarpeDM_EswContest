@@ -19,6 +19,7 @@ const elements = {
   inventory: $("#inventory"),
   visionToggle: $("#visionToggle"),
   dashboardMetrics: $("#dashboardMetrics"),
+  riskAssessment: $("#riskAssessment"),
   inventoryPressure: $("#inventoryPressure"),
   reasonCodes: $("#reasonCodes"),
   auditTransactions: $("#auditTransactions"),
@@ -86,12 +87,53 @@ function fmtNumber(value) {
   return Number(value || 0).toLocaleString("ko-KR");
 }
 
+function stateLabel(state) {
+  const labels = {
+    IDLE: "대기",
+    WAIT_HOUSEHOLD: "가구 확인 대기",
+    WAIT_ITEM: "물품 확인 대기",
+    POLICY_VALIDATION: "지급 기준 확인 중",
+    RESULT_UI: "결과 확인",
+  };
+  return labels[state] || state || "대기";
+}
+
 function resultLabel(result) {
   return result === "APPROVED" ? "승인" : "거절";
 }
 
+function printStatusLabel(status) {
+  const labels = {
+    PRINTED: "출력 완료",
+    FAILED: "출력 실패",
+    WAITING: "출력 대기",
+    NOT_REQUIRED: "출력 없음",
+  };
+  return labels[status] || status || "출력 없음";
+}
+
+function caseLabel(caseId) {
+  const labels = {
+    APPROVE: "정상 지급",
+    DUPLICATE_ITEM: "물품 중복",
+    HOUSEHOLD_LIMIT: "한도 초과",
+    VISION_MISMATCH: "물품 불일치",
+    WRONG_READER: "리더 오류",
+    UNKNOWN_HOUSEHOLD: "미등록 가구",
+    UNKNOWN_ITEM: "미등록 물품",
+    PRINT_FAILURE: "출력 실패",
+  };
+  return labels[caseId] || caseId || "-";
+}
+
 function riskLabel(level) {
   if (level === "critical") return "소진";
+  if (level === "watch") return "주의";
+  return "안정";
+}
+
+function riskAssessmentLabel(level) {
+  if (level === "critical") return "즉시 조치";
   if (level === "watch") return "주의";
   return "안정";
 }
@@ -101,7 +143,7 @@ function evidenceStatusLabel(status) {
   if (status === "watch") return "점검 필요";
   if (status === "needs_measurement") return "실측 필요";
   if (status === "pass") return "통과";
-  if (status === "needs_evidence") return "증거 필요";
+  if (status === "needs_evidence") return "보강 필요";
   if (status === "needs_run") return "실행 필요";
   return status || "대기";
 }
@@ -142,7 +184,7 @@ function setStepClasses(session) {
 function renderDashboard(data) {
   appState.dashboard = data;
   const session = data.session || {};
-  elements.statePill.textContent = session.state || "WAIT_HOUSEHOLD";
+  elements.statePill.textContent = stateLabel(session.state);
   elements.message.textContent = session.message || "가구 카드를 왼쪽 리더에 태그해 주세요.";
 
   elements.householdText.textContent = session.household
@@ -180,7 +222,7 @@ function renderDecision(decision) {
   elements.resultBox.classList.add(approved ? "approved" : "rejected");
   elements.resultMeta.innerHTML = `
     <div><dt>거래번호</dt><dd>${escapeHtml(decision.transaction_id || "-")}</dd></div>
-    <div><dt>출력 상태</dt><dd>${escapeHtml(decision.print_status || "NOT_REQUIRED")}</dd></div>
+    <div><dt>출력 상태</dt><dd>${escapeHtml(printStatusLabel(decision.print_status))}</dd></div>
     <div><dt>확인증</dt><dd>${decision.receipt_available ? "생성됨" : "없음"}</dd></div>
   `;
   renderDecisionChecklist(decision);
@@ -215,7 +257,7 @@ function renderFieldInventory(rows) {
 
 function renderAuditTransactions(rows) {
   if (!rows.length) {
-    elements.auditTransactions.innerHTML = `<tr><td colspan="6">거래 기록 없음</td></tr>`;
+    elements.auditTransactions.innerHTML = `<tr><td colspan="7">거래 기록 없음</td></tr>`;
     return;
   }
 
@@ -229,8 +271,9 @@ function renderAuditTransactions(rows) {
           <td><span class="status-token ${row.result === "APPROVED" ? "approved" : "rejected"}">${escapeHtml(
             resultLabel(row.result),
           )}</span></td>
-          <td>${escapeHtml(row.reason_code || "-")}</td>
-          <td>${escapeHtml(row.print_status || "-")}</td>
+          <td>${escapeHtml(row.policy_version || row.reason_code || "-")}</td>
+          <td>${row.check_count !== undefined ? `${fmtNumber(row.check_count)}개` : escapeHtml(row.print_status || "-")}</td>
+          <td><code>${escapeHtml(row.audit_hash || "-")}</code></td>
         </tr>
       `,
     )
@@ -293,8 +336,10 @@ function renderOps(ops) {
   elements.operationState.classList.toggle("badge-bad", ops.shelter?.operation_state !== "운영 가능");
   renderMetricCards(ops.metrics || {});
   renderDashboardMetrics(ops.metrics || {});
+  renderRiskAssessment(ops.risk_assessment || {});
   renderInventoryPressure(ops.inventory_pressure || []);
   renderReasonCodes(ops.reason_codes || []);
+  renderAuditTransactions(ops.audit_trail || []);
   renderRiskEvents(ops.risk_events || []);
   renderPolicyMatrix(ops.policy_matrix || []);
   renderDeviceMatrix(ops.device_matrix || []);
@@ -302,20 +347,51 @@ function renderOps(ops) {
   renderExperimentTargets(ops.experiment_targets || []);
 }
 
+function renderRiskAssessment(risk) {
+  if (!risk || risk.score === undefined) {
+    elements.riskAssessment.innerHTML = `<p class="empty">운영 리스크 산정 전</p>`;
+    return;
+  }
+  const factors = risk.factors || [];
+  elements.riskAssessment.innerHTML = `
+    <div class="risk-score ${escapeHtml(risk.level)}">
+      <span>현재 상태</span>
+      <strong>${escapeHtml(risk.label || riskAssessmentLabel(risk.level))}</strong>
+      <small>점검 점수 ${fmtNumber(risk.score)} / 100 · 주요 코드 ${escapeHtml(risk.top_reason_code || "-")}</small>
+    </div>
+    <dl class="risk-meta">
+      <div><dt>거절률</dt><dd>${fmtNumber(risk.rejection_rate)}%</dd></div>
+      <div><dt>중복률</dt><dd>${fmtNumber(risk.duplicate_rate)}%</dd></div>
+    </dl>
+    <div class="risk-factor-list">
+      ${factors
+        .map(
+          (factor) => `
+            <div class="risk-factor ${escapeHtml(factor.level)}">
+              <strong>${escapeHtml(factor.label)}</strong>
+              <span>${escapeHtml(factor.detail)}</span>
+            </div>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
 function renderMetricCards(metrics) {
   const cards = [
-    ["오늘 거래", fmtNumber(metrics.today_total), "현장 처리량"],
-    ["승인", fmtNumber(metrics.approved), `승인율 ${metrics.approval_rate || 0}%`],
-    ["중복 차단", fmtNumber(metrics.duplicate_blocks), "D001/D002"],
-    ["남은 재고", fmtNumber(metrics.inventory_available), "전체 물품 기준"],
+    { label: "오늘 거래", value: fmtNumber(metrics.today_total), detail: "현장 처리량", tone: "blue" },
+    { label: "승인", value: fmtNumber(metrics.approved), detail: `승인율 ${metrics.approval_rate || 0}%`, tone: "green" },
+    { label: "중복 차단", value: fmtNumber(metrics.duplicate_blocks), detail: "D001/D002", tone: "amber" },
+    { label: "남은 재고", value: fmtNumber(metrics.inventory_available), detail: "전체 물품 기준", tone: "violet" },
   ];
   elements.metricCards.innerHTML = cards
     .map(
-      ([label, value, detail]) => `
-        <article class="metric-card">
-          <span>${label}</span>
-          <strong>${value}</strong>
-          <small>${detail}</small>
+      (card) => `
+        <article class="metric-card ${card.tone}">
+          <span>${card.label}</span>
+          <strong>${card.value}</strong>
+          <small>${card.detail}</small>
         </article>
       `,
     )
@@ -545,24 +621,28 @@ function renderSoftwareEvidence(evidence) {
 function renderSoftwareMode(mode) {
   elements.softwareMode.innerHTML = `
     <div class="mode-card">
-      <span>${escapeHtml(mode.name || "SW Evidence Mode")}</span>
-      <strong>${mode.hardware_available ? "실장비 포함" : "소프트웨어 검증 모드"}</strong>
-      <p>${escapeHtml(mode.position || "정책과 거래 흐름을 소프트웨어로 검증합니다.")}</p>
+      <span>현재 점검 방식</span>
+      <strong>${mode.hardware_available ? "장비 연결 확인 중" : "장비 없이 점검 중"}</strong>
+      <p>${escapeHtml(mode.position || "지급 기준과 거래 기록을 점검합니다.")}</p>
     </div>
-    <p class="boundary-note">${escapeHtml(mode.boundary || "물리 장치 성능은 별도 실측 대상입니다.")}</p>
+    <p class="boundary-note">${escapeHtml(mode.boundary || "장비 성능 수치는 현장 연결 후 별도 기록합니다.")}</p>
   `;
 }
 
 function renderSoftwareScore(readiness) {
   const score = Number(readiness.score || 0);
   elements.softwareScore.innerHTML = `
-    <div class="score-ring" style="--score: ${Math.max(0, Math.min(100, score))}%">
-      <strong>${score}%</strong>
-      <span>${escapeHtml(readiness.label || "검증 실행 필요")}</span>
+    <div class="score-board ${score >= 90 ? "good" : score >= 70 ? "watch" : "bad"}">
+      <span>점검 점수</span>
+      <strong>${fmtNumber(readiness.earned)} / ${fmtNumber(readiness.total)}점</strong>
+      <small>${escapeHtml(readiness.label || "검증 실행 필요")}</small>
+      <div class="score-bar" aria-hidden="true">
+        <span style="width: ${Math.max(0, Math.min(100, score))}%"></span>
+      </div>
     </div>
     <dl class="score-meta">
-      <div><dt>획득</dt><dd>${fmtNumber(readiness.earned)}점</dd></div>
-      <div><dt>총점</dt><dd>${fmtNumber(readiness.total)}점</dd></div>
+      <div><dt>확인</dt><dd>${fmtNumber(readiness.earned)}점</dd></div>
+      <div><dt>기준</dt><dd>${fmtNumber(readiness.total)}점</dd></div>
     </dl>
   `;
 }
@@ -600,12 +680,12 @@ function renderSoftwareScenarios(rows) {
     .map(
       (row) => `
         <article class="scenario-card ${escapeHtml(row.status)}">
-          <span>${escapeHtml(row.case_id)}</span>
+          <span>${escapeHtml(caseLabel(row.case_id))}</span>
           <strong>${escapeHtml(row.name)}</strong>
           <p>${escapeHtml(row.purpose)}</p>
           <dl>
-            <div><dt>기대</dt><dd>${escapeHtml(row.expected_result)} / ${escapeHtml(row.expected_code)}</dd></div>
-            <div><dt>실제</dt><dd>${escapeHtml(formatActualScenario(row.actual))}</dd></div>
+            <div><dt>기준</dt><dd>${escapeHtml(resultLabel(row.expected_result))} / ${escapeHtml(row.expected_code)}</dd></div>
+            <div><dt>결과</dt><dd>${escapeHtml(formatActualScenario(row.actual))}</dd></div>
           </dl>
         </article>
       `,
@@ -614,8 +694,8 @@ function renderSoftwareScenarios(rows) {
 }
 
 function formatActualScenario(actual) {
-  if (!actual || !Object.keys(actual).length) return "suite 실행 필요";
-  return `${actual.result || "-"} / ${actual.reason_code || "-"} / ${actual.print_status || "NOT_REQUIRED"}`;
+  if (!actual || !Object.keys(actual).length) return "실행 전";
+  return `${resultLabel(actual.result)} / ${actual.reason_code || "-"} / ${printStatusLabel(actual.print_status)}`;
 }
 
 function renderSoftwareBoundary(rows) {
@@ -639,19 +719,19 @@ function renderSoftwareBoundary(rows) {
 
 function renderLatestSuite(latest) {
   if (!latest.available) {
-    elements.softwareLatest.innerHTML = `<p class="empty">${escapeHtml(latest.message || "suite 실행 결과 없음")}</p>`;
+    elements.softwareLatest.innerHTML = `<p class="empty">${escapeHtml(latest.message || "최근 점검 결과 없음")}</p>`;
     return;
   }
   const summary = latest.summary || {};
   elements.softwareLatest.innerHTML = `
     <div class="latest-summary">
       <strong>${fmtNumber(summary.passed_cases)} / ${fmtNumber(summary.total_cases)}</strong>
-      <span>자동 시나리오 통과</span>
+      <span>점검 항목 통과</span>
     </div>
     <dl class="score-meta">
       <div><dt>거래</dt><dd>${fmtNumber(summary.transactions)}건</dd></div>
       <div><dt>거절</dt><dd>${fmtNumber(summary.rejected)}건</dd></div>
-      <div><dt>출력 실패 격리</dt><dd>${fmtNumber(summary.print_failed)}건</dd></div>
+      <div><dt>출력 실패 분리</dt><dd>${fmtNumber(summary.print_failed)}건</dd></div>
     </dl>
   `;
 }
