@@ -18,6 +18,15 @@ const elements = {
   itemButtons: $("#itemButtons"),
   inventory: $("#inventory"),
   visionToggle: $("#visionToggle"),
+  registrationStatus: $("#registrationStatus"),
+  registerKind: $("#registerKind"),
+  registerTarget: $("#registerTarget"),
+  registerUid: $("#registerUid"),
+  readHouseholdUid: $("#readHouseholdUid"),
+  readItemUid: $("#readItemUid"),
+  saveTagRegistration: $("#saveTagRegistration"),
+  registrationPreview: $("#registrationPreview"),
+  registrationList: $("#registrationList"),
   dashboardMetrics: $("#dashboardMetrics"),
   riskAssessment: $("#riskAssessment"),
   inventoryPressure: $("#inventoryPressure"),
@@ -50,10 +59,19 @@ async function api(path, options = {}) {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
+  const raw = await response.text();
+  let data = {};
+  if (raw) {
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      data = { message: raw };
+    }
   }
-  return response.json();
+  if (!response.ok) {
+    throw new Error(data.message || data.error || `HTTP ${response.status}`);
+  }
+  return data;
 }
 
 function post(path, body = {}) {
@@ -305,6 +323,139 @@ function renderScanButtons(tags) {
       `,
     )
     .join("");
+
+  renderRegistrationTargets();
+  renderRegistrationLists(tags);
+}
+
+function registrationRowsForKind(kind, tags = appState.tags) {
+  if (!tags) return [];
+  return kind === "item" ? tags.items || [] : tags.households || [];
+}
+
+function registrationTargetId(row, kind) {
+  return kind === "item" ? row.item_id : row.household_id;
+}
+
+function registrationTargetLabel(row, kind) {
+  if (kind === "item") {
+    return `${row.item_id} · ${row.name}`;
+  }
+  return `${row.household_id} · ${row.head_name}`;
+}
+
+function registrationTargetUid(row, kind) {
+  return kind === "item" ? row.tag_uid : row.card_uid;
+}
+
+function registrationTargetMeta(row, kind) {
+  if (kind === "item") {
+    return `${row.item_type} · ${row.status} · 시각코드 ${row.visual_code || "-"}`;
+  }
+  return `${row.status} · ${row.member_count}인`;
+}
+
+function setRegistrationStatus(message, tone = "neutral") {
+  elements.registrationStatus.textContent = message;
+  elements.registrationStatus.classList.remove("ok", "bad", "neutral");
+  elements.registrationStatus.classList.add(tone);
+}
+
+function renderRegistrationTargets() {
+  const kind = elements.registerKind.value || "household";
+  const previousTarget = elements.registerTarget.value;
+  const rows = registrationRowsForKind(kind);
+  if (!rows.length) {
+    elements.registerTarget.innerHTML = `<option value="">등록 대상 없음</option>`;
+    renderRegistrationPreview();
+    return;
+  }
+
+  elements.registerTarget.innerHTML = rows
+    .map(
+      (row) => `
+        <option value="${escapeHtml(registrationTargetId(row, kind))}">
+          ${escapeHtml(registrationTargetLabel(row, kind))}
+        </option>
+      `,
+    )
+    .join("");
+
+  if (rows.some((row) => registrationTargetId(row, kind) === previousTarget)) {
+    elements.registerTarget.value = previousTarget;
+  }
+  renderRegistrationPreview();
+}
+
+function selectedRegistrationRow() {
+  const kind = elements.registerKind.value || "household";
+  const targetId = elements.registerTarget.value;
+  return registrationRowsForKind(kind).find((row) => registrationTargetId(row, kind) === targetId) || null;
+}
+
+function renderRegistrationPreview() {
+  const kind = elements.registerKind.value || "household";
+  const row = selectedRegistrationRow();
+  if (!row) {
+    elements.registrationPreview.innerHTML = `<p class="empty">등록 대상을 선택하세요.</p>`;
+    return;
+  }
+
+  elements.registrationPreview.innerHTML = `
+    <div class="preview-card">
+      <span>${kind === "item" ? "물품 태그" : "가구 카드"}</span>
+      <strong>${escapeHtml(registrationTargetLabel(row, kind))}</strong>
+      <dl>
+        <div><dt>현재 UID</dt><dd><code>${escapeHtml(registrationTargetUid(row, kind))}</code></dd></div>
+        <div><dt>상태</dt><dd>${escapeHtml(registrationTargetMeta(row, kind))}</dd></div>
+      </dl>
+    </div>
+  `;
+}
+
+function renderRegistrationLists(tags) {
+  if (!tags) {
+    elements.registrationList.innerHTML = `<p class="empty">등록 목록 없음</p>`;
+    return;
+  }
+  elements.registrationList.innerHTML = `
+    <div class="registration-group">
+      <h3>가구 카드</h3>
+      <div class="registration-rows">
+        ${(tags.households || [])
+          .map(
+            (row) => `
+              <div class="registration-row">
+                <div>
+                  <strong>${escapeHtml(row.household_id)} · ${escapeHtml(row.head_name)}</strong>
+                  <span>${escapeHtml(row.status)} · ${escapeHtml(row.member_count)}인</span>
+                </div>
+                <code>${escapeHtml(row.card_uid)}</code>
+              </div>
+            `,
+          )
+          .join("")}
+      </div>
+    </div>
+    <div class="registration-group">
+      <h3>물품 태그</h3>
+      <div class="registration-rows">
+        ${(tags.items || [])
+          .map(
+            (row) => `
+              <div class="registration-row">
+                <div>
+                  <strong>${escapeHtml(row.item_id)} · ${escapeHtml(row.name)}</strong>
+                  <span>${escapeHtml(row.item_type)} · ${escapeHtml(row.status)}</span>
+                </div>
+                <code>${escapeHtml(row.tag_uid)}</code>
+              </div>
+            `,
+          )
+          .join("")}
+      </div>
+    </div>
+  `;
 }
 
 function renderHealth(health) {
@@ -752,6 +903,53 @@ async function scan(reader, uid) {
   }
 }
 
+async function readRegistrationUid(reader) {
+  const label = reader === "item" ? "오른쪽 리더" : "왼쪽 리더";
+  try {
+    setRegistrationStatus(`${label}에서 UID를 읽는 중입니다.`, "neutral");
+    const data = await post("/api/nfc/read-raw", { reader });
+    elements.registerUid.value = data.uid || "";
+    setRegistrationStatus(`${label} UID 읽기 완료: ${data.uid || "-"}`, "ok");
+    setConnection(true);
+  } catch (error) {
+    setRegistrationStatus(error.message || `${label} UID 읽기 실패`, "bad");
+    console.error(error);
+  }
+}
+
+async function saveTagRegistration() {
+  const targetType = elements.registerKind.value || "household";
+  const targetId = elements.registerTarget.value;
+  const uid = elements.registerUid.value.trim();
+  if (!targetId) {
+    setRegistrationStatus("등록할 대상을 선택해 주세요.", "bad");
+    return;
+  }
+  if (!uid) {
+    setRegistrationStatus("등록할 NFC UID를 입력하거나 읽어 주세요.", "bad");
+    return;
+  }
+
+  try {
+    const result = await post("/api/register-tag", {
+      target_type: targetType,
+      target_id: targetId,
+      uid,
+    });
+    elements.registerUid.value = result.uid || uid;
+    renderScanButtons(result.tags || appState.tags || { households: [], items: [] });
+    if (result.state) {
+      renderDashboard(result.state);
+    }
+    await Promise.all([refreshHealth(), refreshOps()]);
+    setRegistrationStatus(result.message || "NFC UID 등록 완료", "ok");
+    setConnection(true);
+  } catch (error) {
+    setRegistrationStatus(error.message || "NFC UID 등록 실패", "bad");
+    console.error(error);
+  }
+}
+
 async function refreshTags() {
   const tags = await api("/api/sample-tags");
   renderScanButtons(tags);
@@ -828,6 +1026,26 @@ $("#resetData").addEventListener("click", async () => {
     setConnection(false);
     console.error(error);
   }
+});
+
+elements.registerKind.addEventListener("change", () => {
+  renderRegistrationTargets();
+});
+
+elements.registerTarget.addEventListener("change", () => {
+  renderRegistrationPreview();
+});
+
+elements.readHouseholdUid.addEventListener("click", () => {
+  readRegistrationUid("household");
+});
+
+elements.readItemUid.addEventListener("click", () => {
+  readRegistrationUid("item");
+});
+
+elements.saveTagRegistration.addEventListener("click", () => {
+  saveTagRegistration();
 });
 
 function updateClock() {

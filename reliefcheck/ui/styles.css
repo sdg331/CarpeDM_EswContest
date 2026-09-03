@@ -35,7 +35,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -58,7 +59,8 @@ button {
 }
 
 button:focus-visible,
-input:focus-visible {
+input:focus-visible,
+select:focus-visible {
   outline: 3px solid rgba(23, 105, 224, 0.24);
   outline-offset: 2px;
 }
@@ -308,6 +310,7 @@ h3 {
 }
 
 .field-grid,
+.registration-grid,
 .ops-grid,
 .policy-grid,
 .device-layout,
@@ -322,6 +325,7 @@ h3 {
 }
 
 .ops-grid,
+.registration-grid,
 .policy-grid,
 .device-layout,
 .software-grid,
@@ -557,6 +561,139 @@ h3 {
   border-color: #d87f76;
   background: #ffe5e1;
   transform: translateY(-1px);
+}
+
+.registration-status {
+  min-height: 48px;
+  margin-bottom: 14px;
+  padding: 12px 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfd;
+  color: var(--muted);
+  font-weight: 760;
+  line-height: 1.45;
+}
+
+.registration-status.ok {
+  border-color: #9bd4b7;
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.registration-status.bad {
+  border-color: #eeaaa4;
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.registration-form {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.7fr) minmax(180px, 1fr) minmax(220px, 1.1fr);
+  gap: 10px;
+}
+
+.registration-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.registration-form label span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.registration-form input,
+.registration-form select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 720;
+}
+
+.registration-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.registration-preview,
+.registration-list,
+.registration-rows {
+  display: grid;
+  gap: 10px;
+}
+
+.registration-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.preview-card,
+.registration-row {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfd;
+  box-shadow: 0 6px 16px rgba(28, 36, 44, 0.04);
+}
+
+.preview-card {
+  padding: 14px;
+}
+
+.preview-card span,
+.registration-row span {
+  color: var(--muted);
+  font-size: 0.79rem;
+  font-weight: 720;
+}
+
+.preview-card strong {
+  display: block;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+  font-size: 1.05rem;
+}
+
+.preview-card dl {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.preview-card dl div {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(104, 113, 122, 0.18);
+}
+
+.registration-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, auto);
+  gap: 12px;
+  align-items: center;
+  min-height: 68px;
+  padding: 11px;
+}
+
+.registration-row strong,
+.registration-row span {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.registration-row code {
+  justify-self: end;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .result-box {
@@ -1332,6 +1469,7 @@ th {
 
 @media (max-width: 1220px) {
   .field-grid,
+  .registration-grid,
   .ops-grid,
   .policy-grid,
   .device-layout,
@@ -1358,6 +1496,7 @@ th {
 
   .topbar,
   .field-grid,
+  .registration-grid,
   .ops-grid,
   .policy-grid,
   .device-layout,
@@ -1374,6 +1513,9 @@ th {
   .device-health,
   .context-grid,
   .coverage-strip,
+  .registration-form,
+  .registration-actions,
+  .registration-list,
   .software-grid .scenario-grid {
     grid-template-columns: 1fr;
   }
@@ -1418,8 +1560,13 @@ th {
   .device-card,
   .experiment-item,
   .pillar-item,
-  .pressure-item {
+  .pressure-item,
+  .registration-row {
     grid-template-columns: 1fr;
+  }
+
+  .registration-row code {
+    justify-self: start;
   }
 }
 

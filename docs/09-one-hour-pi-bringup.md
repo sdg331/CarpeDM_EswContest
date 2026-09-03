@@ -8,7 +8,7 @@
 |---|---|---|
 | 0~10분 | Pi 부팅/네트워크 | 터미널 사용 가능 |
 | 10~25분 | 프로젝트 실행 | `http://127.0.0.1:8008` 접속 |
-| 25~40분 | NFC 리더 확인 | PC/SC reader name 확인 |
+| 25~40분 | NFC 리더 확인/등록 | PC/SC reader name 확인, 등록 탭에서 UID 저장 |
 | 40~55분 | 프린터 확인 | CUPS 프린터 이름 확인 또는 screen fallback |
 | 55~60분 | 증거 캡처 | `/health`, 대시보드, 장치 사진 |
 
@@ -81,10 +81,19 @@ python -m reliefcheck.main --reset-seed
 NFC 확인:
 
 ```bash
-curl -X POST http://127.0.0.1:8008/api/nfc/read-once \
+curl -X POST http://127.0.0.1:8008/api/nfc/read-raw \
   -H 'Content-Type: application/json' \
   -d '{"reader":"household"}'
 ```
+
+웹에서 등록:
+
+1. 브라우저에서 `NFC 등록` 탭을 연다.
+2. `가구 카드`와 `HH-001`을 선택한다.
+3. `왼쪽 리더 읽기`를 누르거나 방금 읽힌 UID를 직접 입력한다.
+4. `UID 저장`을 누른다.
+5. 같은 방식으로 `물품 태그`와 `ITEM-RICE-001`을 등록한다.
+6. `현장 지급` 탭으로 돌아가 실제 태그 순서대로 시연한다.
 
 ## 5. 프린터는 CUPS 우선
 

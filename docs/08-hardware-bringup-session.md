@@ -79,6 +79,37 @@ curl -X POST http://127.0.0.1:8008/api/nfc/read-once \
 - 물품 리더에서 물품 태그 UID를 읽는다.
 - 반대 리더에 태그하면 `R001`이 표시된다.
 
+## 3-1. NFC 등록 모드
+
+목표: 실제 카드와 물품 태그의 UID를 기존 시연 데이터에 매핑한다.
+
+웹 UI:
+
+1. `NFC 등록` 탭을 연다.
+2. `가구 카드` 또는 `물품 태그`를 선택한다.
+3. 등록 대상을 선택한다.
+4. 실제 리더가 연결되어 있으면 `왼쪽 리더 읽기` 또는 `오른쪽 리더 읽기`를 누른다.
+5. UID가 들어오면 `UID 저장`을 누른다.
+6. `현장 지급` 탭에서 방금 등록한 태그로 지급 흐름을 확인한다.
+
+API 확인:
+
+```bash
+curl -X POST http://127.0.0.1:8008/api/nfc/read-raw \
+  -H 'Content-Type: application/json' \
+  -d '{"reader":"household"}'
+
+curl -X POST http://127.0.0.1:8008/api/register-tag \
+  -H 'Content-Type: application/json' \
+  -d '{"target_type":"household","target_id":"HH-001","uid":"실제로_읽힌_UID"}'
+```
+
+주의:
+
+- 같은 UID를 다른 가구나 물품에 중복 등록하면 거절된다.
+- `--reset-seed` 또는 샘플 초기화 버튼을 누르면 등록값이 샘플 UID로 돌아간다.
+- 실장비가 아직 불안정하면 UID를 직접 입력해 등록 흐름만 먼저 시연한다.
+
 ## 4. 프린터 연결
 
 목표: 승인 거래 후 출력 상태가 `PRINTED` 또는 `FAILED`로 분리되는지 확인한다.

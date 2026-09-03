@@ -159,6 +159,22 @@ def make_handler(runtime: ReliefCheckRuntime) -> type[BaseHTTPRequestHandler]:
                     )
                     self._send_json(runtime.service.public_dashboard())
                     return
+                if path == "/api/nfc/read-raw":
+                    role = str(payload.get("reader", ""))
+                    read_result = runtime.nfc.read_uid_once(role)
+                    if not read_result.ok:
+                        self._send_json({"ok": False, "message": read_result.message}, status=409)
+                        return
+                    self._send_json({"ok": True, "uid": read_result.uid, "message": read_result.message})
+                    return
+                if path == "/api/register-tag":
+                    result = runtime.service.register_tag(
+                        target_type=str(payload.get("target_type", "")),
+                        target_id=str(payload.get("target_id", "")),
+                        uid=str(payload.get("uid", "")),
+                    )
+                    self._send_json(result, status=200 if result.get("ok") else 409)
+                    return
                 if path == "/api/reprint":
                     runtime.service.retry_print(str(payload.get("transaction_id", "")))
                     self._send_json(runtime.service.public_dashboard())

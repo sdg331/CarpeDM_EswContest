@@ -14,6 +14,7 @@ from reliefcheck.services.receipt import build_receipt_text
 from reliefcheck.storage.database import (
     fetch_inventory,
     fetch_recent_transactions,
+    fetch_sample_tags,
     lookup_uid,
     rebuild_inventory,
 )
@@ -279,6 +280,64 @@ class DistributionService:
         self.session.reset("샘플 데이터를 초기화했습니다. 가구 카드를 태그해 주세요.")
         return self.dashboard()
 
+    def register_tag(self, target_type: str, target_id: str, uid: str) -> dict[str, Any]:
+        target_type = target_type.strip().lower()
+        target_id = target_id.strip()
+        uid = normalize_registration_uid(uid)
+        tags = lambda: fetch_sample_tags(self.conn)
+
+        if target_type not in {"household", "item"}:
+            return {"ok": False, "message": "등록 대상은 가구 또는 물품이어야 합니다.", "tags": tags()}
+        if not target_id:
+            return {"ok": False, "message": "등록할 대상을 선택해 주세요.", "tags": tags()}
+        if not uid:
+            return {"ok": False, "message": "등록할 NFC UID가 비어 있습니다.", "tags": tags()}
+
+        target = self._fetch_registration_target(target_type, target_id)
+        if target is None:
+            return {"ok": False, "message": "등록할 대상을 찾지 못했습니다.", "tags": tags()}
+
+        owner = self._find_uid_owner(uid)
+        if owner and owner != (target_type, target_id):
+            owner_label = "가구" if owner[0] == "household" else "물품"
+            return {
+                "ok": False,
+                "message": f"이미 {owner_label} {owner[1]}에 등록된 UID입니다.",
+                "tags": tags(),
+            }
+
+        with self.conn:
+            if target_type == "household":
+                self.conn.execute(
+                    "UPDATE households SET card_uid = ? WHERE household_id = ?",
+                    (uid, target_id),
+                )
+            else:
+                self.conn.execute(
+                    "UPDATE items SET tag_uid = ? WHERE item_id = ?",
+                    (uid, target_id),
+                )
+            self.conn.execute(
+                """
+                INSERT INTO device_logs(device, event, severity, message, timestamp)
+                VALUES ('nfc', 'tag_registered', 'INFO', ?, ?)
+                """,
+                (f"{target_type}:{target_id} UID 등록", now_iso()),
+            )
+
+        self.session.reset(f"{target['label']}에 NFC UID를 등록했습니다.")
+        updated = self._fetch_registration_target(target_type, target_id) or target
+        return {
+            "ok": True,
+            "message": f"{updated['label']} 등록 완료",
+            "target_type": target_type,
+            "target_id": target_id,
+            "uid": uid,
+            "record": updated,
+            "tags": tags(),
+            "state": self.public_dashboard(),
+        }
+
     def _fetch_transaction(self, tx_id: str) -> dict[str, Any] | None:
         row = self.conn.execute(
             """
@@ -297,6 +356,55 @@ class DistributionService:
             (tx_id,),
         ).fetchone()
         return row["print_status"] if row else "FAILED"
+
+    def _fetch_registration_target(self, target_type: str, target_id: str) -> dict[str, Any] | None:
+        if target_type == "household":
+            row = self.conn.execute(
+                """
+                SELECT household_id, card_uid, head_name, member_count, status
+                FROM households
+                WHERE household_id = ?
+                """,
+                (target_id,),
+            ).fetchone()
+            if row is None:
+                return None
+            record = dict(row)
+            record["label"] = f"{record['household_id']} · {record['head_name']}"
+            record["uid"] = record["card_uid"]
+            return record
+
+        row = self.conn.execute(
+            """
+            SELECT i.item_id, i.tag_uid, i.item_type, i.status, i.visual_code, it.name
+            FROM items i
+            JOIN item_types it ON it.item_type = i.item_type
+            WHERE i.item_id = ?
+            """,
+            (target_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        record = dict(row)
+        record["label"] = f"{record['item_id']} · {record['name']}"
+        record["uid"] = record["tag_uid"]
+        return record
+
+    def _find_uid_owner(self, uid: str) -> tuple[str, str] | None:
+        household = self.conn.execute(
+            "SELECT household_id FROM households WHERE card_uid = ?",
+            (uid,),
+        ).fetchone()
+        if household:
+            return "household", household["household_id"]
+
+        item = self.conn.execute(
+            "SELECT item_id FROM items WHERE tag_uid = ?",
+            (uid,),
+        ).fetchone()
+        if item:
+            return "item", item["item_id"]
+        return None
 
 
 def reader_role_error() -> dict[str, Any]:
@@ -337,3 +445,17 @@ def public_transactions(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def build_audit_hash(payload: dict[str, Any]) -> str:
     raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16].upper()
+
+
+def normalize_registration_uid(raw_uid: str) -> str:
+    value = raw_uid.strip().upper()
+    if not value:
+        return ""
+
+    hex_chars = set("0123456789ABCDEF")
+    separators = set(" :-_")
+    if all((char in hex_chars or char in separators) for char in value):
+        compact = "".join(char for char in value if char in hex_chars)
+        if compact:
+            return compact
+    return value

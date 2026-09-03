@@ -31,6 +31,7 @@
         <button class="tab-button is-active" type="button" data-tab-target="field" aria-selected="true">
           현장 지급
         </button>
+        <button class="tab-button" type="button" data-tab-target="registration" aria-selected="false">NFC 등록</button>
         <button class="tab-button" type="button" data-tab-target="dashboard" aria-selected="false">운영 대시보드</button>
         <button class="tab-button" type="button" data-tab-target="policy" aria-selected="false">정책 판정</button>
         <button class="tab-button" type="button" data-tab-target="devices" aria-selected="false">장치 진단</button>
@@ -130,6 +131,67 @@
               <div id="inventory" class="inventory-list"></div>
             </div>
           </aside>
+        </div>
+      </section>
+
+      <section id="tab-registration" class="tab-panel" aria-label="NFC 등록">
+        <div class="registration-grid">
+          <section class="panel wide-panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">등록 모드</p>
+                <h2>NFC 태그 등록</h2>
+              </div>
+            </div>
+
+            <div id="registrationStatus" class="registration-status" aria-live="polite">
+              등록할 가구 또는 물품을 선택하세요.
+            </div>
+
+            <div class="registration-form">
+              <label>
+                <span>등록 종류</span>
+                <select id="registerKind">
+                  <option value="household">가구 카드</option>
+                  <option value="item">물품 태그</option>
+                </select>
+              </label>
+              <label>
+                <span>등록 대상</span>
+                <select id="registerTarget"></select>
+              </label>
+              <label>
+                <span>NFC UID</span>
+                <input id="registerUid" type="text" inputmode="text" autocomplete="off" placeholder="읽은 UID 또는 직접 입력" />
+              </label>
+            </div>
+
+            <div class="registration-actions">
+              <button id="readHouseholdUid" class="ghost-button" type="button">왼쪽 리더 읽기</button>
+              <button id="readItemUid" class="ghost-button" type="button">오른쪽 리더 읽기</button>
+              <button id="saveTagRegistration" class="scan-button" type="button">UID 저장</button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">선택 대상</p>
+                <h2>등록 미리보기</h2>
+              </div>
+            </div>
+            <div id="registrationPreview" class="registration-preview"></div>
+          </section>
+
+          <section class="panel full-panel">
+            <div class="panel-title">
+              <div>
+                <p class="section-kicker">현재 등록값</p>
+                <h2>가구 카드 / 물품 태그 목록</h2>
+              </div>
+            </div>
+            <div id="registrationList" class="registration-list"></div>
+          </section>
         </div>
       </section>
 
