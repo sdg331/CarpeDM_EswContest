@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-03T11:11:38+09:00",
+  "generated_at": "2026-09-03T11:22:43+09:00",
   "mode": "소프트웨어 점검 모드",
   "hardware_boundary": "수동 입력, 화면 출력, 카메라 모의 입력 기준이며 물리 장치 신뢰성 수치는 주장하지 않음",
   "summary": {
@@ -39,7 +39,7 @@
         "transaction_delta": 1,
         "checks": 7,
         "policy_version": "POLICY-2026-09",
-        "audit_hash": "665C15BC140F7D39"
+        "audit_hash": "1F8B5F0514F2A534"
       }
     },
     {
@@ -59,7 +59,7 @@
         "transaction_delta": 1,
         "checks": 3,
         "policy_version": "POLICY-2026-09",
-        "audit_hash": "34879FED1C7935F5"
+        "audit_hash": "999E797C0E5DD198"
       }
     },
     {
@@ -79,7 +79,7 @@
         "transaction_delta": 1,
         "checks": 7,
         "policy_version": "POLICY-2026-09",
-        "audit_hash": "B6AB3FDB266927FE"
+        "audit_hash": "3F0D8D2D352B3EA3"
       }
     },
     {
@@ -99,7 +99,7 @@
         "transaction_delta": 1,
         "checks": 7,
         "policy_version": "POLICY-2026-09",
-        "audit_hash": "AAEECE396D438112"
+        "audit_hash": "B3C3A7DC0C2346AF"
       }
     },
     {
@@ -119,7 +119,7 @@
         "transaction_delta": 1,
         "checks": 6,
         "policy_version": "POLICY-2026-09",
-        "audit_hash": "DAB8924393F7A1B4"
+        "audit_hash": "14E82C459B237464"
       }
     },
     {
@@ -139,7 +139,7 @@
         "transaction_delta": 1,
         "checks": 7,
         "policy_version": "POLICY-2026-09",
-        "audit_hash": "7B0197C83F6DE828"
+        "audit_hash": "E26BFF19909203D5"
       }
     },
     {
@@ -219,7 +219,7 @@
         "transaction_delta": 1,
         "checks": 7,
         "policy_version": "POLICY-2026-09",
-        "audit_hash": "90971A5F491CD4F8"
+        "audit_hash": "3A17D86F247AA1BF"
       }
     }
   ]
