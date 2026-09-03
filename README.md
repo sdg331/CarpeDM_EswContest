@@ -68,6 +68,23 @@ Distribution Service
 
 핵심 원칙은 거래 기록을 먼저 확정한 뒤 출력 상태를 별도로 갱신하는 것입니다. 프린터 출력이 실패해도 승인 거래는 원장에 남기 때문에 같은 물품이 중복 지급되는 상황을 줄일 수 있습니다.
 
+## 1차 3D 모델링
+
+실장비 배치 설명을 위해 1차 키오스크 형상 모델을 함께 제공합니다. 현재 모델은 제작 확정 도면이 아니라, 터치 화면, 듀얼 NFC 리더, 영수증 프린터, 카메라, Raspberry Pi 서비스 영역의 위치 관계를 보여주는 개념 모델입니다.
+
+| 파일 | 용도 |
+|---|---|
+| `models/reliefcheck-kiosk-v1.stl` | GitHub에서 바로 볼 수 있는 3D 미리보기용 모델 |
+| `models/reliefcheck-kiosk-v1.scad` | OpenSCAD에서 수정 가능한 원본 모델 |
+| `models/reliefcheck-kiosk-v1.json` | 치수와 부품 배치 메타데이터 |
+| `docs/10-3d-model-v1.md` | 모델링 의도, 가정 치수, 후속 제작 체크포인트 |
+
+하부 받침 footprint는 약 `460(W) x 340(D)`이고, 출력 용지와 후면 케이블 출구까지 포함한 1차 envelope는 약 `460(W) x 422(D) x 497(H)`입니다. 실제 제작 전에는 장비 실측, 체결부, 방열구, 케이블 반경, 프린터 용지 교체 공간을 다시 반영해야 합니다.
+
+```bash
+python scripts/export_kiosk_model.py
+```
+
 ## 빠른 실행
 
 ```bash
@@ -194,6 +211,9 @@ python -m unittest discover -s tests
 | `reliefcheck/devices/printer.py` | 화면 파일, CUPS, ESC/POS 프린터 어댑터 |
 | `reliefcheck/vision/item_verification.py` | QR 기반 물품 교차검증 어댑터 |
 | `scripts/hardware_preflight.py` | Pi, USB, PC/SC, 프린터, 카메라 사전 점검 |
+| `scripts/export_kiosk_model.py` | 1차 STL 모델 재생성 |
+| `models/` | STL, OpenSCAD, 모델 메타데이터 |
+| `docs/10-3d-model-v1.md` | 1차 3D 모델링 메모 |
 | `docs/08-hardware-bringup-session.md` | 실제 장비 연결 단계별 진행표 |
 | `docs/09-one-hour-pi-bringup.md` | 제한 시간 내 시연 준비 절차 |
 | `deploy/reliefcheck.service` | Raspberry Pi systemd 자동 실행 예시 |
@@ -204,4 +224,5 @@ python -m unittest discover -s tests
 2. ACR1252U 2대의 PC/SC reader name을 고정합니다.
 3. 실제 카드와 물품 태그 UID를 등록합니다.
 4. 프린터를 CUPS 또는 ESC/POS 방식으로 연결합니다.
-5. 장비별 반복 측정 결과를 `reports/`에 추가합니다.
+5. 실제 장비 치수를 3D 모델에 반영합니다.
+6. 장비별 반복 측정 결과를 `reports/`에 추가합니다.
